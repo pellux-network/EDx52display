@@ -38,7 +38,7 @@ func main() {
 		}
 	}()
 	var logLevelArg string
-	flag.StringVar(&logLevelArg, "log", "info", "Desired log level. One of [panic, fatal, error, warning, info, debug, trace]. Default: info.")
+	flag.StringVar(&logLevelArg, "log", "trace", "Desired log level. One of [panic, fatal, error, warning, info, debug, trace]. Default: trace.")
 
 	flag.Parse()
 	logLevel, err := log.ParseLevel(logLevelArg)
