@@ -36,3 +36,6 @@ Release.zip
 
 # Debug folder
 debug_journal
+
+# Log file
+custom.log
