@@ -2,8 +2,9 @@ package edreader
 
 import (
 	"encoding/json"
+	"os"
+
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
 )
 
 const FileModulesInfo = "ModulesInfo.json"
@@ -15,14 +16,14 @@ type ModulesInfo struct {
 
 // ModulesLine struct to load individual module in the ModuleInfo
 type ModulesLine struct {
-	Slot        string
-	Item        string
+	Slot string
+	Item string
 }
 
 var currentModules ModulesInfo
 
 func handleModulesInfoFile(file string) {
-	data, err := ioutil.ReadFile(file)
+	data, err := os.ReadFile(file)
 	if err != nil {
 		log.Errorln(err)
 		return
@@ -36,30 +37,30 @@ func ModulesInfoCargoCapacity() int {
 
 	for _, line := range currentModules.Modules {
 		switch line.Item {
-			case "int_cargorack_size1_class1":
-				cargoCapacity += 2
-				break
-			case "int_cargorack_size2_class1":
-				cargoCapacity += 4
-				break
-			case "int_cargorack_size3_class1":
-				cargoCapacity += 8
-				break
-			case "int_cargorack_size4_class1":
-				cargoCapacity += 16
-				break
-			case "int_cargorack_size5_class1":
-				cargoCapacity += 32
-				break
-			case "int_cargorack_size6_class1":
-				cargoCapacity += 64
-				break
-			case "int_cargorack_size7_class1":
-				cargoCapacity += 128
-				break
-			case "int_cargorack_size8_class1":
-				cargoCapacity += 256
-				break
+		case "int_cargorack_size1_class1":
+			cargoCapacity += 2
+			break
+		case "int_cargorack_size2_class1":
+			cargoCapacity += 4
+			break
+		case "int_cargorack_size3_class1":
+			cargoCapacity += 8
+			break
+		case "int_cargorack_size4_class1":
+			cargoCapacity += 16
+			break
+		case "int_cargorack_size5_class1":
+			cargoCapacity += 32
+			break
+		case "int_cargorack_size6_class1":
+			cargoCapacity += 64
+			break
+		case "int_cargorack_size7_class1":
+			cargoCapacity += 128
+			break
+		case "int_cargorack_size8_class1":
+			cargoCapacity += 256
+			break
 		}
 	}
 

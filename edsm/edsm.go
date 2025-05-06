@@ -3,7 +3,7 @@ package edsm
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sort"
 	"strings"
@@ -168,7 +168,7 @@ func getBodyInfo(url string, id64 int64) <-chan SystemResult {
 			return
 		}
 		defer resp.Body.Close()
-		data, err := ioutil.ReadAll(resp.Body)
+		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			retchan <- SystemResult{s, err}
 			return

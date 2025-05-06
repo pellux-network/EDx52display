@@ -2,7 +2,6 @@ package conf
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	log "github.com/sirupsen/logrus"
@@ -22,7 +21,7 @@ type Conf struct {
 func LoadConf() Conf {
 	log.Debugln("Loading configuration...")
 	defer log.Debugln("Configuration loaded.")
-	data, err := ioutil.ReadFile("conf.yaml")
+	data, err := os.ReadFile("conf.yaml")
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
