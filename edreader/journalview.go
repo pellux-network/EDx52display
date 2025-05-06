@@ -133,8 +133,6 @@ func renderEDSMSystem(page *mfd.Page, header, systemname string, systemaddress i
 		b := bodies[0]
 		page.Add("%s: %.2f%%", b.ShortName(sys), b.Materials[mat])
 	}
-
-	return
 }
 
 func renderEDSMBody(page *mfd.Page, header, bodyName string, systemaddress, bodyid int64) {
@@ -165,6 +163,4 @@ func renderEDSMBody(page *mfd.Page, header, bodyName string, systemaddress, body
 	for _, m := range body.MaterialsSorted() {
 		page.Add("%5.2f%% %s", m.Percentage, m.Name)
 	}
-
-	return
 }

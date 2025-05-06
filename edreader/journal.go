@@ -149,7 +149,6 @@ func ParseJournalLine(line []byte, state *Journalstate) {
 		eApproachBody(p, state)
 	case "ApproachSettlement":
 		eApproachSettlement(p, state)
-		break
 	}
 }
 
