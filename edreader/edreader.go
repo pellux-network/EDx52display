@@ -19,9 +19,9 @@ const DisplayPages = 3
 var tick time.Ticker
 
 const (
-	pageCargo = iota
+	pageTargetInfo = iota
 	pageLocation
-	pageTargetInfo
+	pageCargo
 )
 
 // Mfd is the MFD display structure that will be used by this module. The number of pages should not be changed
