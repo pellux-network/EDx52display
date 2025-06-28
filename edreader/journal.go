@@ -129,6 +129,10 @@ func handleJournalFile(filename string) {
 func ParseJournalLine(line []byte, state *Journalstate) {
 	re := regexp.MustCompile(`"event":"(\w*)"`)
 	event := re.FindStringSubmatch(string(line))
+	if len(event) < 2 {
+		// Not a valid event line, skip
+		return
+	}
 	p := parser{line}
 	switch event[1] {
 	case "Location":

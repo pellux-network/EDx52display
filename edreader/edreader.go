@@ -1,6 +1,7 @@
 package edreader
 
 import (
+	"bufio"
 	"os"
 	"path/filepath"
 	"sync"
@@ -33,6 +34,13 @@ var MfdLock = sync.RWMutex{}
 // PrevMfd is the previous Mfd written to file, to be used for comparisons and avoid superflous updates.
 var PrevMfd = Mfd.Copy()
 
+var (
+	lastJournalFile   string
+	lastJournalOffset int64
+	lastJournalInode  uint64       // for file rotation detection (optional, platform-specific)
+	lastJournalState  Journalstate // <-- Add this to persist state
+)
+
 // Start starts the Elite Dangerous journal reader routine
 func Start(cfg conf.Conf) {
 	// Update immediately, to ensure the mfd.json file exist
@@ -50,13 +58,65 @@ func Start(cfg conf.Conf) {
 }
 
 func updateMFD(journalfolder string) {
-	// Read in the files at start before we start watching, to initialize
 	journalFile := findJournalFile(journalfolder)
-	handleJournalFile(journalFile)
+	handleJournalFileIncremental(journalFile)
 
 	handleModulesInfoFile(filepath.Join(journalfolder, FileModulesInfo))
 	handleCargoFile(filepath.Join(journalfolder, FileCargo))
 	swapMfd()
+}
+
+// handleJournalFileIncremental reads only new lines from the journal file since the last read.
+func handleJournalFileIncremental(filename string) {
+	if filename == "" {
+		return
+	}
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Warnln("Error opening journal file ", filename, err)
+		return
+	}
+	defer file.Close()
+
+	var offset int64 = 0
+	if filename == lastJournalFile {
+		offset = lastJournalOffset
+	}
+
+	info, err := file.Stat()
+	if err != nil {
+		log.Warnln("Error stating journal file ", filename, err)
+		return
+	}
+
+	// If file shrank (rotated), start from beginning
+	if offset > info.Size() {
+		offset = 0
+	}
+
+	_, err = file.Seek(offset, 0)
+	if err != nil {
+		log.Warnln("Error seeking journal file ", filename, err)
+		return
+	}
+
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	state := lastJournalState // Start from last known state
+	linesRead := 0
+	for scanner.Scan() {
+		ParseJournalLine(scanner.Bytes(), &state)
+		linesRead++
+	}
+	if linesRead > 0 {
+		lastJournalState = state // Only update if new lines were read
+	}
+	RefreshDisplay(lastJournalState)
+
+	// Save offset for next time
+	pos, _ := file.Seek(0, 1)
+	lastJournalFile = filename
+	lastJournalOffset = pos
 }
 
 // Stop closes the watcher again
