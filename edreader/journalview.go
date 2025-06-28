@@ -13,27 +13,46 @@ import (
 func RefreshDisplay(state Journalstate) {
 	MfdLock.Lock()
 	defer MfdLock.Unlock()
+
+	// Only one destination page is shown at a time
+	Mfd.Pages[pageDestination] = mfd.NewPage()
+	if state.Destination.SystemID != 0 &&
+		state.Destination.SystemID == state.Location.SystemAddress &&
+		state.Destination.BodyID != 0 {
+		renderSystemDestination(&Mfd.Pages[pageDestination], state)
+	} else if state.EDSMTarget.SystemAddress != 0 {
+		renderFSDTarget(&Mfd.Pages[pageDestination], state)
+	} else {
+		Mfd.Pages[pageDestination].Add("No Destination")
+	}
+
 	Mfd.Pages[pageLocation] = mfd.NewPage()
 	renderLocationPage(&Mfd.Pages[pageLocation], state)
-	Mfd.Pages[pageTargetInfo] = mfd.NewPage()
-	renderFSDTarget(&Mfd.Pages[pageTargetInfo], state)
+	// If you have a renderCargoPage, call it here. Otherwise, just clear the page.
+	Mfd.Pages[pageCargo] = mfd.NewPage()
+	// renderCargoPage(&Mfd.Pages[pageCargo], state) // Uncomment if implemented
 }
 
 func renderLocationPage(page *mfd.Page, state Journalstate) {
 	if state.Type == LocationPlanet || state.Type == LocationLanded {
-		renderEDSMBody(page, "#    Planet    #", state.Location.Body, state.Location.SystemAddress, state.BodyID)
+		renderEDSMBody(page, "#    Planet    #", state.Location.Body, state.Location.SystemAddress, state.Location.BodyID)
 	} else {
 		renderEDSMSystem(page, "#    System    #", state.Location.StarSystem, state.Location.SystemAddress)
 	}
-
 }
 
 func renderFSDTarget(page *mfd.Page, state Journalstate) {
 	if state.EDSMTarget.SystemAddress == 0 {
 		page.Add("No FSD Target")
 	} else {
-		renderEDSMSystem(page, "#  FSD Target  #", state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
+		renderEDSMSystem(page, "#  FSD Destination  #", state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
 	}
+}
+
+func renderSystemDestination(page *mfd.Page, state Journalstate) {
+	page.Add("# System Destination #")
+	page.Add(state.Destination.Name)
+	renderEDSMBody(page, "", state.Destination.Name, state.Location.SystemAddress, state.Destination.BodyID)
 }
 
 func renderEDSMSystem(page *mfd.Page, header, systemname string, systemaddress int64) {

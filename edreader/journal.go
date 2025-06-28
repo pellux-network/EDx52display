@@ -2,6 +2,7 @@ package edreader
 
 import (
 	"bufio"
+	"io"
 	"os"
 	"regexp"
 
@@ -30,6 +31,7 @@ const (
 type Journalstate struct {
 	Location
 	EDSMTarget
+	Destination // NEW: add destination info
 }
 
 // Location indicates the players current location in the game
@@ -51,6 +53,13 @@ type Location struct {
 type EDSMTarget struct {
 	Name          string
 	SystemAddress int64
+}
+
+// Destination holds the current destination info from Status.json
+type Destination struct {
+	SystemID int64
+	BodyID   int64
+	Name     string
 }
 
 const (
@@ -107,9 +116,10 @@ func (p *parser) getFloat(field string) (float64, bool) {
 var printer = message.NewPrinter(language.English)
 
 var (
-	lastJournalFile   string
-	lastJournalOffset int64
-	lastJournalState  Journalstate
+	lastJournalFile    string
+	lastJournalOffset  int64
+	lastJournalState   Journalstate
+	lastStatusFileSize int64 // NEW: for status file change detection
 )
 
 // handleJournalFile reads only new lines from the journal file since the last read.
@@ -165,6 +175,46 @@ func handleJournalFile(filename string) {
 	lastJournalOffset = pos
 }
 
+// handleStatusFile reads Status.json for the current destination
+func handleStatusFile(filename string) {
+	if filename == "" {
+		return
+	}
+	file, err := os.Open(filename)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	info, err := file.Stat()
+	if err != nil {
+		return
+	}
+	if info.Size() == lastStatusFileSize {
+		return
+	}
+	lastStatusFileSize = info.Size()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return
+	}
+
+	destObj, _, _, err := jsonparser.Get(data, "Destination")
+	if err == nil && len(destObj) > 0 {
+		sysID, _ := jsonparser.GetInt(destObj, "System")
+		bodyID, _ := jsonparser.GetInt(destObj, "Body")
+		name, _ := jsonparser.GetString(destObj, "Name")
+		lastJournalState.Destination = Destination{
+			SystemID: sysID,
+			BodyID:   bodyID,
+			Name:     name,
+		}
+	} else {
+		lastJournalState.Destination = Destination{}
+	}
+}
+
 // ParseJournalLine parses a single line of the journal and returns the new state after parsing.
 func ParseJournalLine(line []byte, state *Journalstate) {
 	re := regexp.MustCompile(`"event":"(\w*)"`)
@@ -205,8 +255,8 @@ func eLocation(p parser, state *Journalstate) {
 	bodyType, ok := p.getString(bodytype)
 
 	if ok && bodyType == "Planet" {
-		state.BodyID, _ = p.getInt(bodyid)
-		state.Body, _ = p.getString(body)
+		state.Location.BodyID, _ = p.getInt(bodyid)
+		state.Location.Body, _ = p.getString(body)
 		state.BodyType, _ = p.getString(bodytype)
 		state.Type = LocationPlanet
 

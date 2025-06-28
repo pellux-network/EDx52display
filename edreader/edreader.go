@@ -14,15 +14,14 @@ import (
 	"github.com/peterbn/EDx52display/conf"
 )
 
-const DisplayPages = 3
+const (
+	pageDestination = iota // 0: Destination (FSD or System)
+	pageLocation           // 1: Location
+	pageCargo              // 2: Cargo
+	DisplayPages
+)
 
 var tick time.Ticker
-
-const (
-	pageTargetInfo = iota
-	pageLocation
-	pageCargo
-)
 
 // Mfd is the MFD display structure that will be used by this module. The number of pages should not be changed
 var Mfd = mfd.Display{Pages: make([]mfd.Page, DisplayPages)}
@@ -52,6 +51,8 @@ func Start(cfg conf.Conf) {
 func updateMFD(journalfolder string) {
 	journalFile := findJournalFile(journalfolder)
 	handleJournalFile(journalFile)
+
+	handleStatusFile(filepath.Join(journalfolder, "Status.json")) // NEW: parse Status.json
 
 	handleModulesInfoFile(filepath.Join(journalfolder, FileModulesInfo))
 	handleCargoFile(filepath.Join(journalfolder, FileCargo))
