@@ -4,12 +4,16 @@ Reading Elite: Dangerous journal information and displaying on a Logitech X52 PR
 
 Please note that this software only works with the X52 Pro. The regular X52 HOTAS does not support third-party software for the MFD.
 
-**NOTE: It is recommended to run a tool that uploads data to EDSM, such as [ED Market Connector](https://github.com/Marginal/EDMarketConnector). <br>
+**NOTE 1: This fork is an attempt to update and improve the original app which has been abandoned. Currently, it replaces the parsing function to read 
+line by line which is not only much more efficient but is working correctly again and doesn't "freeze". It also adds the ability to read the current
+in-system destination and display EDSM info about it. Additionally, it includes another fork which improves logging.
+
+**NOTE 2: It is recommended to run a tool that uploads data to EDSM, such as [ED Market Connector](https://github.com/Marginal/EDMarketConnector). <br>
 Doing this will ensure that any new discoveries can be shown on the display.**
 
 ## Installation
 
-Unzip the release folder and run the `EDx52display.exe` application.
+Currently, you must build the app yourself using `go build`
 
 ## Output
 
@@ -19,21 +23,24 @@ Of particular note is:
 
 - Live view of cargo hold - *keep track while mining*
 - Value of scanning and mapping the system - *know where to go, without checking system map*
-- Surface gravity of the planet you are about to land on - *avoid becoming a stellar pancacke!*
+- Surface gravity of the planet you are about to land on - *avoid becoming a stellar pancake!*
 
-### Page 1: Cargo hold
+### Page 1: Destination
 
-This page will simply show the total used capacity and the contents of your cargo hold. This can be useful when mining, to check progress without having to go into the inventory panel.
+This page adapts based on your current target. If an in-system destination is selected, the "System Destination" page will be displayed, showing the name of the celestial body along with 
+relevant information from EDSM, such as its gravity. If the target is another system, the "FSD Destination" page will appear, providing the name of the next jump's system, details about 
+whether the star is scoopable, and additional system information.
 
-### Page 2: Current location
+### Page 2: Current Location
 
-This page will show information about your current location.
-Currently, this means either the system you are in, or the planet you have approached.
-See below for specifics of what is shown for each type
+This page provides details about your current location, which may refer to the system you are situated in or the planet you have approached. 
+It also includes additional information regarding the location.
 
-### Page 3: FSD Target
+### Page 3: Cargo
 
-This page will show system information about the system targeted for a FSD Jump
+This page displays the current occupancy of your cargo hold along with a detailed list of specific items and their respective quantities.
+
+
 
 ### System Page
 
