@@ -6,7 +6,7 @@ Please note that this software only works with the X52 Pro. The regular X52 HOTA
 
 **NOTE 1: This fork is an attempt to update and improve the original app which has been abandoned. Currently, it replaces the parsing function to read 
 line by line which is not only much more efficient but is working correctly again and doesn't "freeze". It also adds the ability to read the current
-in-system destination and display EDSM info about it. Additionally, it includes another fork which improves logging.
+in-system destination and display EDSM info about it. Additionally, it includes another fork which improves logging.**
 
 **NOTE 2: It is recommended to run a tool that uploads data to EDSM, such as [ED Market Connector](https://github.com/Marginal/EDMarketConnector). <br>
 Doing this will ensure that any new discoveries can be shown on the display.**
