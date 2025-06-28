@@ -106,23 +106,63 @@ func (p *parser) getFloat(field string) (float64, bool) {
 
 var printer = message.NewPrinter(language.English)
 
-// handleJournalFile reads an entire journal file and returns the resulting state
+var (
+	lastJournalFile   string
+	lastJournalOffset int64
+	lastJournalState  Journalstate
+)
+
+// handleJournalFile reads only new lines from the journal file since the last read.
 func handleJournalFile(filename string) {
-	log.Traceln("Reading journal file " + filename)
+	if filename == "" {
+		return
+	}
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Warnln("Error opening journal file ", filename, err)
+		return
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-	state := Journalstate{}
-	for scanner.Scan() {
-		ParseJournalLine(scanner.Bytes(), &state)
+	var offset int64 = 0
+	if filename == lastJournalFile {
+		offset = lastJournalOffset
 	}
 
-	RefreshDisplay(state)
+	info, err := file.Stat()
+	if err != nil {
+		log.Warnln("Error stating journal file ", filename, err)
+		return
+	}
+
+	// If file shrank (rotated), start from beginning
+	if offset > info.Size() {
+		offset = 0
+	}
+
+	_, err = file.Seek(offset, 0)
+	if err != nil {
+		log.Warnln("Error seeking journal file ", filename, err)
+		return
+	}
+
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	state := lastJournalState // Start from last known state
+	linesRead := 0
+	for scanner.Scan() {
+		ParseJournalLine(scanner.Bytes(), &state)
+		linesRead++
+	}
+	if linesRead > 0 {
+		lastJournalState = state // Only update if new lines were read
+	}
+	RefreshDisplay(lastJournalState)
+
+	// Save offset for next time
+	pos, _ := file.Seek(0, 1)
+	lastJournalFile = filename
+	lastJournalOffset = pos
 }
 
 // ParseJournalLine parses a single line of the journal and returns the new state after parsing.
