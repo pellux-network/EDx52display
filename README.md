@@ -41,22 +41,6 @@ It also includes additional information regarding the location.
 
 This page displays the current occupancy of your cargo hold along with a detailed list of specific items and their respective quantities.
 
-
-
-### System Page
-
-A page with system information will have the following information, sourced from EDSM:
-
-- System Name
-- Whether the main star is scoopable
-- Number of bodies (as reported by EDSM)
-- Total value for scanning the system
-- Total value for mapping the entire system
-- Any valuable bodies
-- System Prospecting information
-  - Available elements, with number of planets landable where they occur
-  - The planet in the system with the highest occurence of said element
-
 ### Planet Page
 
 A page with planet information will have the following data, sourced from EDSM:
@@ -64,6 +48,8 @@ A page with planet information will have the following data, sourced from EDSM:
 - Planet name
 - Planet Gravity (!)
 - Available materials for the planet, if any
+
+This page replaces the System page when you're close to a body
 
 ## Buttons / Navigation
 
