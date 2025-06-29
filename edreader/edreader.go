@@ -9,53 +9,90 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/peterbn/EDx52display/mfd"
-
 	"github.com/peterbn/EDx52display/conf"
+	"github.com/peterbn/EDx52display/mfd"
 )
+
+// PageKey is a string identifier for each page
+type PageKey string
 
 const (
-	pageDestination = iota // 0: Destination (FSD or System)
-	pageLocation           // 1: Location
-	pageCargo              // 2: Cargo
-	DisplayPages
+	PageDestination PageKey = "destination"
+	PageLocation    PageKey = "location"
+	PageCargo       PageKey = "cargo"
 )
 
-var tick time.Ticker
+// PageDef describes a page and how to render it
+type PageDef struct {
+	Key         PageKey
+	DisplayName string
+	Render      func(*mfd.Page, Journalstate)
+}
 
-// Mfd is the MFD display structure that will be used by this module. The number of pages should not be changed
-var Mfd = mfd.Display{Pages: make([]mfd.Page, DisplayPages)}
+// Registry of all possible pages
+var PageRegistry = []PageDef{
+	{
+		Key:         PageDestination,
+		DisplayName: "Destination",
+		Render:      RenderDestinationPage, // This function contains the dynamic logic
+	},
+	{
+		Key:         PageLocation,
+		DisplayName: "Location",
+		Render:      RenderLocationPage,
+	},
+	{
+		Key:         PageCargo,
+		DisplayName: "Cargo",
+		Render:      RenderCargoPage,
+	},
+}
 
-// MfdLock locks the current MFD for reads and writes
-var MfdLock = sync.RWMutex{}
-
-// PrevMfd is the previous Mfd written to file, to be used for comparisons and avoid superflous updates.
-var PrevMfd = Mfd.Copy()
+// Mfd is the MFD display structure to be used by this module.
+var (
+	Mfd     mfd.Display
+	MfdLock = sync.RWMutex{}
+	PrevMfd mfd.Display
+	tick    *time.Ticker // FIX: declare tick here
+)
 
 // Start starts the Elite Dangerous journal reader routine
 func Start(cfg conf.Conf) {
-	// Update immediately, to ensure the mfd.json file exist
 	log.Info("Starting journal listener")
 	journalfolder := cfg.ExpandJournalFolderPath()
 	log.Debugln("Looking for journal files in " + journalfolder)
-	updateMFD(journalfolder)
-	tick := time.NewTicker(time.Duration(cfg.RefreshRateMS) * time.Millisecond)
+	updateMFD(journalfolder, cfg)
+	tick = time.NewTicker(time.Duration(cfg.RefreshRateMS) * time.Millisecond)
 
 	go func() {
 		for range tick.C {
-			updateMFD(journalfolder)
+			updateMFD(journalfolder, cfg)
 		}
 	}()
 }
 
-func updateMFD(journalfolder string) {
+func updateMFD(journalfolder string, cfg conf.Conf) {
 	journalFile := findJournalFile(journalfolder)
 	handleJournalFile(journalFile)
-
-	handleStatusFile(filepath.Join(journalfolder, "Status.json")) // NEW: parse Status.json
-
+	handleStatusFile(filepath.Join(journalfolder, "Status.json"))
 	handleModulesInfoFile(filepath.Join(journalfolder, FileModulesInfo))
+
+	// Update in-memory cargo before rendering pages
 	handleCargoFile(filepath.Join(journalfolder, FileCargo))
+
+	// Build enabled pages
+	var enabledPages []mfd.Page
+	for _, pageDef := range PageRegistry {
+		if cfg.Pages[string(pageDef.Key)] {
+			page := mfd.NewPage()
+			pageDef.Render(&page, lastJournalState)
+			enabledPages = append(enabledPages, page)
+		}
+	}
+	MfdLock.Lock()
+	Mfd = mfd.Display{Pages: enabledPages}
+	MfdLock.Unlock()
+
 	swapMfd()
 }
 

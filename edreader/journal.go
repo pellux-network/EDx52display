@@ -167,7 +167,6 @@ func handleJournalFile(filename string) {
 	if linesRead > 0 {
 		lastJournalState = state // Only update if new lines were read
 	}
-	RefreshDisplay(lastJournalState)
 
 	// Save offset for next time
 	pos, _ := file.Seek(0, 1)

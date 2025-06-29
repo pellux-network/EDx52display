@@ -15,6 +15,7 @@ import (
 type Conf struct {
 	JournalsFolder string
 	RefreshRateMS  int
+	Pages          map[string]bool `yaml:"pages"` // Add this line
 }
 
 // LoadConf loads the config from the yaml file

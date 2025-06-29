@@ -3,17 +3,14 @@ package edreader
 import (
 	"encoding/csv"
 	"encoding/json"
-	"fmt"
 	"os"
 	"sort"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/peterbn/EDx52display/mfd"
+	log "github.com/sirupsen/logrus"
 )
 
-// FileCargo is the name of the processed Cargo file
 const FileCargo = "Cargo.json"
 
 const (
@@ -22,13 +19,11 @@ const (
 	rareCommodityNameFile = nameFileFolder + "rare_commodity.csv"
 )
 
-// Cargo struct to load the cargo file saved by ED
 type Cargo struct {
 	Count     int
 	Inventory []CargoLine
 }
 
-// CargoLine struct to load individual items in the cargo
 type CargoLine struct {
 	Name          string
 	Count         int
@@ -45,46 +40,51 @@ func (cl CargoLine) displayname() string {
 	return name
 }
 
-var names map[string]string
+var (
+	names        map[string]string
+	currentCargo Cargo
+)
 
 func init() {
 	log.Debugln("Initializing cargo name map...")
 	initNameMap()
 }
 
-func handleCargoFile(file string) {
-	data, err := os.ReadFile(file)
-	if err != nil {
-		fmt.Println(err)
+func RenderCargoPage(page *mfd.Page, _ Journalstate) {
+	// If currentCargo is nil (never loaded), show "No cargo data"
+	if currentCargo.Inventory == nil {
+		page.Add("No cargo data")
 		return
 	}
-	var cargo Cargo
-	json.Unmarshal(data, &cargo)
-
-	page := mfd.NewPage()
-
-	renderCargo(&page, cargo)
-
-	MfdLock.Lock()
-	Mfd.Pages[pageCargo] = page
-	MfdLock.Unlock()
-}
-
-func renderCargo(page *mfd.Page, cargo Cargo) {
-	page.Add("#Cargo: %03d/%03d#", cargo.Count, ModulesInfoCargoCapacity())
-	sort.Slice(cargo.Inventory, func(i, j int) bool {
-		a := cargo.Inventory[i]
-		b := cargo.Inventory[j]
+	page.Add("#Cargo: %03d/%03d#", currentCargo.Count, ModulesInfoCargoCapacity())
+	if len(currentCargo.Inventory) == 0 {
+		page.Add("Cargo Hold Empty")
+		return
+	}
+	sort.Slice(currentCargo.Inventory, func(i, j int) bool {
+		a := currentCargo.Inventory[i]
+		b := currentCargo.Inventory[j]
 		return a.displayname() < b.displayname()
 	})
 
-	for _, line := range cargo.Inventory {
+	for _, line := range currentCargo.Inventory {
 		page.Add("%s: %d", line.displayname(), line.Count)
 	}
 }
 
-func initNameMap() {
+func handleCargoFile(file string) {
+	data, err := os.ReadFile(file)
+	if err != nil {
+		log.Debugln("No cargo file found:", file)
+		currentCargo = Cargo{}
+		return
+	}
+	var cargo Cargo
+	json.Unmarshal(data, &cargo)
+	currentCargo = cargo
+}
 
+func initNameMap() {
 	commodity := readCsvFile(commodityNameFile)
 	rareCommodity := readCsvFile(rareCommodityNameFile)
 

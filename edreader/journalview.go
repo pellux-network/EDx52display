@@ -9,51 +9,38 @@ import (
 	"github.com/peterbn/EDx52display/mfd"
 )
 
-// RefreshDisplay updates the display with the current state
-func RefreshDisplay(state Journalstate) {
-	MfdLock.Lock()
-	defer MfdLock.Unlock()
-
-	// Only one destination page is shown at a time
-	Mfd.Pages[pageDestination] = mfd.NewPage()
-	if state.Destination.SystemID != 0 &&
-		state.Destination.SystemID == state.Location.SystemAddress &&
-		state.Destination.BodyID != 0 {
-		renderSystemDestination(&Mfd.Pages[pageDestination], state)
-	} else if state.EDSMTarget.SystemAddress != 0 {
-		renderFSDTarget(&Mfd.Pages[pageDestination], state)
-	} else {
-		Mfd.Pages[pageDestination].Add("No Destination")
-	}
-
-	Mfd.Pages[pageLocation] = mfd.NewPage()
-	renderLocationPage(&Mfd.Pages[pageLocation], state)
-	Mfd.Pages[pageCargo] = mfd.NewPage()
-}
-
-func renderLocationPage(page *mfd.Page, state Journalstate) {
+func RenderLocationPage(page *mfd.Page, state Journalstate) {
 	if state.Type == LocationPlanet || state.Type == LocationLanded {
-		renderEDSMBody(page, "#    Planet    #", state.Location.Body, state.Location.SystemAddress, state.Location.BodyID)
+		RenderEDSMBody(page, "#    Planet    #", state.Location.Body, state.Location.SystemAddress, state.Location.BodyID)
 	} else {
-		renderEDSMSystem(page, "#    System    #", state.Location.StarSystem, state.Location.SystemAddress)
+		RenderEDSMSystem(page, "#    System    #", state.Location.StarSystem, state.Location.SystemAddress)
 	}
 }
 
-func renderFSDTarget(page *mfd.Page, state Journalstate) {
+func RenderFSDTarget(page *mfd.Page, state Journalstate) {
 	if state.EDSMTarget.SystemAddress == 0 {
 		page.Add("No FSD Target")
 	} else {
-		renderEDSMSystem(page, "#  FSD Target  #", state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
+		RenderEDSMSystem(page, "#  FSD Target  #", state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
 	}
 }
 
-func renderSystemDestination(page *mfd.Page, state Journalstate) {
-	page.Add("# Local Target #")
-	page.Add(state.Destination.Name)
-	renderEDSMBody(page, "", state.Destination.Name, state.Location.SystemAddress, state.Destination.BodyID)
+func RenderDestinationPage(page *mfd.Page, state Journalstate) {
+	// Show local destination if set, else FSD target, else "No Destination"
+	if state.Destination.SystemID != 0 &&
+		state.Destination.SystemID == state.Location.SystemAddress &&
+		state.Destination.BodyID != 0 {
+		page.Add("# Local Target #")
+		page.Add(state.Destination.Name)
+		RenderEDSMBody(page, "", state.Destination.Name, state.Location.SystemAddress, state.Destination.BodyID)
+	} else if state.EDSMTarget.SystemAddress != 0 {
+		RenderEDSMSystem(page, "#  FSD Target  #", state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
+	} else {
+		page.Add("No Destination")
+	}
 }
 
-func renderEDSMSystem(page *mfd.Page, header, systemname string, systemaddress int64) {
+func RenderEDSMSystem(page *mfd.Page, header, systemname string, systemaddress int64) {
 	sysinfopromise := edsm.GetSystemBodies(systemaddress)
 	valueinfopromise := edsm.GetSystemValue(systemaddress)
 
@@ -152,7 +139,7 @@ func renderEDSMSystem(page *mfd.Page, header, systemname string, systemaddress i
 	}
 }
 
-func renderEDSMBody(page *mfd.Page, header, bodyName string, systemaddress, bodyid int64) {
+func RenderEDSMBody(page *mfd.Page, header, bodyName string, systemaddress, bodyid int64) {
 	sysinfopromise := edsm.GetSystemBodies(systemaddress)
 	page.Add(header)
 	page.Add(bodyName)

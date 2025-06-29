@@ -85,7 +85,15 @@ func onReady() {
 
 		conf := conf.LoadConf()
 
-		err = mfd.InitDevice(edreader.DisplayPages, edsm.ClearCache)
+		// Calculate number of enabled pages
+		pageCount := 0
+		for _, enabled := range conf.Pages {
+			if enabled {
+				pageCount++
+			}
+		}
+
+		err = mfd.InitDevice(uint32(pageCount), edsm.ClearCache)
 		if err != nil {
 			log.Panic(err)
 		}
