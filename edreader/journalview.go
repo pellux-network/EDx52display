@@ -28,9 +28,7 @@ func RefreshDisplay(state Journalstate) {
 
 	Mfd.Pages[pageLocation] = mfd.NewPage()
 	renderLocationPage(&Mfd.Pages[pageLocation], state)
-	// If you have a renderCargoPage, call it here. Otherwise, just clear the page.
 	Mfd.Pages[pageCargo] = mfd.NewPage()
-	// renderCargoPage(&Mfd.Pages[pageCargo], state) // Uncomment if implemented
 }
 
 func renderLocationPage(page *mfd.Page, state Journalstate) {
@@ -45,12 +43,12 @@ func renderFSDTarget(page *mfd.Page, state Journalstate) {
 	if state.EDSMTarget.SystemAddress == 0 {
 		page.Add("No FSD Target")
 	} else {
-		renderEDSMSystem(page, "#  FSD Destination  #", state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
+		renderEDSMSystem(page, "#  FSD Target  #", state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
 	}
 }
 
 func renderSystemDestination(page *mfd.Page, state Journalstate) {
-	page.Add("# System Destination #")
+	page.Add("# Local Target #")
 	page.Add(state.Destination.Name)
 	renderEDSMBody(page, "", state.Destination.Name, state.Location.SystemAddress, state.Destination.BodyID)
 }
