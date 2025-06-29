@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	_ "embed"
 
@@ -62,18 +64,24 @@ func onReady() {
 		}
 
 		log.SetLevel(logLevel)
-
 		log.SetFormatter(&TextLogFormatter{})
 
-		log.Info("Switching to logging to a file...")
-		logfile, err := os.OpenFile("custom.log", os.O_WRONLY|os.O_CREATE, 0o777)
-		if err != nil {
-			log.Error("Failed to open the file, continuing to write logs to the console window.")
-		} else {
-			defer logfile.Close()
-			log.Info("The file was opened successfully, see further logs in `custom.log`.")
-			log.SetOutput(logfile)
-		}
+		// Ensure logs directory exists
+		logDir := "logs"
+		_ = os.MkdirAll(logDir, 0755)
+		logFileName := time.Now().Format("2006-01-02_15.04.05") + ".log"
+		logPath := filepath.Join(logDir, logFileName)
+
+		// Set up log rotation
+		log.SetOutput(&lumberjack.Logger{
+			Filename:   logPath,
+			MaxSize:    10, // megabytes
+			MaxBackups: 5,
+			MaxAge:     30,   //days
+			Compress:   true, // compress old logs
+		})
+
+		log.Infof("Logging to %s", logPath)
 
 		conf := conf.LoadConf()
 
