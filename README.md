@@ -13,8 +13,8 @@ Doing this will ensure that any new discoveries can be shown on the display.**
 
 ## Installation
 
-Simply download the latest release zip from the [releases](https://github.com/pellux-network/EDx52display/releases/latest) page or build the app yourself with
-`go build -o EDx52Display.exe`
+Simply download the latest release zip from the [releases](https://github.com/pellux-network/EDx52display/releases/latest) page or build the app yourself
+by running `release.ps1`
 
 ## Output
 
@@ -81,6 +81,11 @@ uses a different location, you should update the conf.yaml file in the installat
 
 ## Credits
 
+### Original Credits
 This project owes a great deal to [Anthony Zaprzalka](https://github.com/AZaps) in terms of idea and execution
 and to [Jonathan Harris](https://github.com/Marginal) and the [EDMarketConnector](https://github.com/Marginal/EDMarketConnector) project
 for the CSV files of names for all the commodities.
+
+### Fork Credits
+Thanks to original author [Peter Pakkenberg](https://github.com/peterbn) and the author I forked from [rinkulu](https://github.com/rinkulu/)
+
