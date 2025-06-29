@@ -1,5 +1,5 @@
 journalsfolder: "%USERPROFILE%\\Saved Games\\Frontier Developments\\Elite Dangerous"
-refreshratems: 1000
+refreshratems: 500
 
 pages:
   destination: true

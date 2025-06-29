@@ -2,6 +2,11 @@ name: Go Build and Release
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 0.1.2)'
+        required: true
+        default: '0.1.2'
 
 jobs:
   build-and-release:
@@ -29,15 +34,8 @@ jobs:
         mkdir EDx52Display
         Copy-Item -Path EDx52display.exe,conf.yaml,LICENSE,README.md,names,DepInclude -Destination .\EDx52Display -Recurse
 
-    - name: Generate Version Tag
-      id: version
-      shell: bash
-      run: |
-        VERSION="v$(date +'%Y.%m.%d')-$(git rev-parse --short HEAD)"
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-
     - name: Create Release Zip
-      run: powershell Compress-Archive -Path .\EDx52Display\* -DestinationPath .\Release-${{ steps.version.outputs.version }}.zip
+      run: powershell Compress-Archive -Path .\EDx52Display\* -DestinationPath .\Release-${{ github.event.inputs.version }}.zip
 
     - name: Create GitHub Release
       id: create_release
@@ -45,8 +43,8 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ steps.version.outputs.version }}
-        release_name: "EDx52display ${{ steps.version.outputs.version }}"
+        tag_name: v${{ github.event.inputs.version }}
+        release_name: "EDx52display v${{ github.event.inputs.version }}"
         draft: false
         prerelease: false
 
@@ -56,6 +54,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./Release-${{ steps.version.outputs.version }}.zip
-        asset_name: Release-${{ steps.version.outputs.version }}.zip
+        asset_path: ./Release-${{ github.event.inputs.version }}.zip
+        asset_name: Release-${{ github.event.inputs.version }}.zip
         asset_content_type: application/zip
