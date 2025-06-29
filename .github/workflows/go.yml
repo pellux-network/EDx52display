@@ -26,7 +26,7 @@ jobs:
         Remove-Item .\Release*.zip -ErrorAction SilentlyContinue
 
     - name: Build Project
-      run: go build -o EDx52display.exe
+      run: go build -v -o EDx52display.exe
 
     - name: Prepare Release Directory
       run: |
@@ -44,6 +44,7 @@ jobs:
       run: powershell Compress-Archive -Path .\EDx52Display\* -DestinationPath .\Release-${{ steps.version.outputs.version }}.zip
 
     - name: Create GitHub Release
+      id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -58,7 +59,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ steps.version.outputs.version }}
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./Release-${{ steps.version.outputs.version }}.zip
         asset_name: Release-${{ steps.version.outputs.version }}.zip
         asset_content_type: application/zip
