@@ -5,6 +5,7 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:
 
 jobs:
   build-and-release:
@@ -22,7 +23,7 @@ jobs:
       run: |
         go clean
         Remove-Item .\EDx52Display -Force -Recurse -ErrorAction SilentlyContinue
-        Remove-Item .\Release.zip -ErrorAction SilentlyContinue
+        Remove-Item .\Release*.zip -ErrorAction SilentlyContinue
 
     - name: Build Project
       run: go build -o EDx52display.exe
@@ -32,11 +33,32 @@ jobs:
         mkdir EDx52Display
         Copy-Item -Path EDx52display.exe,conf.yaml,LICENSE,README.md,names,DepInclude -Destination .\EDx52Display -Recurse
 
-    - name: Create Release Zip
-      run: powershell Compress-Archive -Path .\EDx52Display\* -DestinationPath .\Release.zip
+    - name: Generate Version Tag
+      id: version
+      shell: bash
+      run: |
+        VERSION="v$(date +'%Y.%m.%d')-$(git rev-parse --short HEAD)"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-    - name: Upload Release Artifact
-      uses: actions/upload-artifact@v4
+    - name: Create Release Zip
+      run: powershell Compress-Archive -Path .\EDx52Display\* -DestinationPath .\Release-${{ steps.version.outputs.version }}.zip
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        name: Release
-        path: Release.zip
+        tag_name: ${{ steps.version.outputs.version }}
+        release_name: "EDx52display ${{ steps.version.outputs.version }}"
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        asset_path: ./Release-${{ steps.version.outputs.version }}.zip
+        asset_name: Release-${{ steps.version.outputs.version }}.zip
+        asset_content_type: application/zip
