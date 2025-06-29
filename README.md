@@ -49,7 +49,7 @@ A page with planet information will have the following data, sourced from EDSM:
 - Planet Gravity (!)
 - Available materials for the planet, if any
 
-This page replaces the System page when you're close to a body
+This page replaces the Current Location page when you're close to a body
 
 ## Buttons / Navigation
 
