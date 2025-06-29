@@ -1,0 +1,61 @@
+name: Go Build and Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20'
+
+    - name: Clean Previous Build
+      run: |
+        go clean
+        Remove-Item .\EDx52Display -Force -Recurse -ErrorAction SilentlyContinue
+        Remove-Item .\Release*.zip -ErrorAction SilentlyContinue
+
+    - name: Build Project
+      run: go build -v -o EDx52display.exe
+
+    - name: Prepare Release Directory
+      run: |
+        mkdir EDx52Display
+        Copy-Item -Path EDx52display.exe,conf.yaml,LICENSE,README.md,names,DepInclude -Destination .\EDx52Display -Recurse
+
+    - name: Generate Version Tag
+      id: version
+      shell: bash
+      run: |
+        VERSION="v$(date +'%Y.%m.%d')-$(git rev-parse --short HEAD)"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Create Release Zip
+      run: powershell Compress-Archive -Path .\EDx52Display\* -DestinationPath .\Release-${{ steps.version.outputs.version }}.zip
+
+    - name: Create GitHub Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        release_name: "EDx52display ${{ steps.version.outputs.version }}"
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./Release-${{ steps.version.outputs.version }}.zip
+        asset_name: Release-${{ steps.version.outputs.version }}.zip
+        asset_content_type: application/zip
