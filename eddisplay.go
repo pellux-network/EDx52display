@@ -2,13 +2,15 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 
+	_ "embed"
+
+	"github.com/getlantern/systray"
 	"github.com/peterbn/EDx52display/conf"
 	"github.com/peterbn/EDx52display/edreader"
 	"github.com/peterbn/EDx52display/edsm"
@@ -17,6 +19,9 @@ import (
 
 // TextLogFormatter gives me custom command-line formatting
 type TextLogFormatter struct{}
+
+//go:embed icon.ico
+var iconData []byte
 
 func (f *TextLogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
@@ -27,50 +32,73 @@ func (f *TextLogFormatter) Format(entry *log.Entry) ([]byte, error) {
 }
 
 func main() {
+	systray.Run(onReady, onExit)
+}
 
-	defer func() {
-		// Attempt to catch any crash messages before the cmd window closes
-		if r := recover(); r != nil {
-			log.Warnln("Crashed with message")
-			log.Warnln(r)
-			log.Warnln("Press RETURN to exit")
-			fmt.Scanln() // keep it running until I get input
+func onReady() {
+	// Set up systray icon and menu
+	systray.SetIcon(getIcon()) // You can provide your own icon as []byte
+	systray.SetTitle("EDx52Display")
+	systray.SetTooltip("EDx52Display is running")
+
+	mQuit := systray.AddMenuItem("Quit", "Quit the application")
+
+	// Start your main logic in a goroutine
+	go func() {
+		defer func() {
+			// Attempt to catch any crash messages before the cmd window closes
+			if r := recover(); r != nil {
+				log.Warnln("Crashed with message")
+				log.Warnln(r)
+			}
+		}()
+		var logLevelArg string
+		flag.StringVar(&logLevelArg, "log", "trace", "Desired log level. One of [panic, fatal, error, warning, info, debug, trace]. Default: trace.")
+
+		flag.Parse()
+		logLevel, err := log.ParseLevel(logLevelArg)
+		if err != nil {
+			log.Panic(err)
 		}
+
+		log.SetLevel(logLevel)
+
+		log.SetFormatter(&TextLogFormatter{})
+
+		log.Info("Switching to logging to a file...")
+		logfile, err := os.OpenFile("custom.log", os.O_WRONLY|os.O_CREATE, 0o777)
+		if err != nil {
+			log.Error("Failed to open the file, continuing to write logs to the console window.")
+		} else {
+			defer logfile.Close()
+			log.Info("The file was opened successfully, see further logs in `custom.log`.")
+			log.SetOutput(logfile)
+		}
+
+		conf := conf.LoadConf()
+
+		err = mfd.InitDevice(edreader.DisplayPages, edsm.ClearCache)
+		if err != nil {
+			log.Panic(err)
+		}
+		defer mfd.DeInitDevice()
+
+		edreader.Start(conf)
+		defer edreader.Stop()
+
+		// Wait for quit
+		<-mQuit.ClickedCh
+		systray.Quit()
 	}()
-	var logLevelArg string
-	flag.StringVar(&logLevelArg, "log", "trace", "Desired log level. One of [panic, fatal, error, warning, info, debug, trace]. Default: trace.")
 
-	flag.Parse()
-	logLevel, err := log.ParseLevel(logLevelArg)
-	if err != nil {
-		log.Panic(err)
-	}
+	// Optionally, handle other menu items here
+}
 
-	log.SetLevel(logLevel)
+func onExit() {
+	// Cleanup tasks if needed
+}
 
-	log.SetFormatter(&TextLogFormatter{})
-
-	log.Info("Switching to logging to a file...")
-	logfile, err := os.OpenFile("custom.log", os.O_WRONLY|os.O_CREATE, 0o777)
-	if err != nil {
-		log.Error("Failed to open the file, continuing to write logs to the console window.")
-	} else {
-		defer logfile.Close()
-		log.Info("The file was opened successfully, see further logs in `custom.log`.")
-		log.SetOutput(logfile)
-	}
-
-	conf := conf.LoadConf()
-
-	err = mfd.InitDevice(edreader.DisplayPages, edsm.ClearCache)
-	if err != nil {
-		log.Panic(err)
-	}
-	defer mfd.DeInitDevice()
-
-	edreader.Start(conf)
-	defer edreader.Stop()
-
-	log.Infoln("EDx52Display running. Press enter to close.")
-	fmt.Scanln() // keep it running until I get input
+// getIcon returns an icon as []byte. Replace with your own icon if desired.
+func getIcon() []byte {
+	return iconData
 }

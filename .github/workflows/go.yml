@@ -22,7 +22,7 @@ jobs:
         Remove-Item .\Release*.zip -ErrorAction SilentlyContinue
 
     - name: Build Project
-      run: go build -v -o EDx52display.exe
+      run: go build -ldflags -H=windowsgui -v -o EDx52display.exe
 
     - name: Prepare Release Directory
       run: |

@@ -5,7 +5,7 @@ Remove-Item .\Release.zip -ErrorAction SilentlyContinue
 
 mkdir EDx52Display
 
-go build
+go build -ldflags -H=windowsgui
 
 Copy-Item -Path EDx52display.exe,conf.yaml,LICENSE,README.md,names,DepInclude -Destination .\EDx52Display -Recurse
 
