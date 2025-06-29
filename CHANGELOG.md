@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.1.3] - xx-xx-2025 [IN PROGRESS]
+
+### Added
+- `-s -w` flags to strip debug info
+- UPX compression
+※ These changes result in the release executable dropping from about
+   11MB to 2.4MB!!!
+
+### Changed
+- Default polling rate now 500ms
+
 ## [v0.1.2] - 06-29-2025
 
 ### Added
