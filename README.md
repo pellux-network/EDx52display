@@ -13,7 +13,8 @@ Doing this will ensure that any new discoveries can be shown on the display.**
 
 ## Installation
 
-Currently, you must build the app yourself using `go build`
+Simply download the latest release zip from the [releases](https://github.com/pellux-network/EDx52display/releases/latest) page or build the app yourself with
+`go build -o EDx52Display.exe`
 
 ## Output
 
