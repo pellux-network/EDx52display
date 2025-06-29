@@ -21,6 +21,7 @@ type ModulesLine struct {
 }
 
 var currentModules ModulesInfo
+var currentCargoCapacity int // NEW: updated from Loadout event
 
 func handleModulesInfoFile(file string) {
 	data, err := os.ReadFile(file)
@@ -33,6 +34,9 @@ func handleModulesInfoFile(file string) {
 }
 
 func ModulesInfoCargoCapacity() int {
+	if currentCargoCapacity > 0 {
+		return currentCargoCapacity
+	}
 	cargoCapacity := 0
 
 	for _, line := range currentModules.Modules {

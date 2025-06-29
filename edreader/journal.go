@@ -243,6 +243,8 @@ func ParseJournalLine(line []byte, state *Journalstate) {
 		eApproachBody(p, state)
 	case "ApproachSettlement":
 		eApproachSettlement(p, state)
+	case "Loadout":
+		eLoadout(p) // NEW: handle Loadout event
 	}
 }
 
@@ -314,4 +316,11 @@ func eApproachSettlement(p parser, state *Journalstate) {
 	state.Location.BodyID, _ = p.getInt(bodyid)
 
 	state.Type = LocationPlanet
+}
+
+func eLoadout(p parser) {
+	capacity, ok := p.getInt("CargoCapacity")
+	if ok {
+		currentCargoCapacity = int(capacity)
+	}
 }
