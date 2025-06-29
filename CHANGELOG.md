@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v0.1.3] - xx-xx-2025 [IN PROGRESS]
+## [v0.1.3] - 06-29-2025
 
 ### Added
 - `-s -w` flags to strip debug info
