@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-release:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
@@ -21,7 +21,8 @@ jobs:
     - name: Clean Previous Build
       run: |
         go clean
-        rm -rf ./EDx52Display ./Release.zip || true
+        Remove-Item .\EDx52Display -Force -Recurse -ErrorAction SilentlyContinue
+        Remove-Item .\Release.zip -ErrorAction SilentlyContinue
 
     - name: Build Project
       run: go build -o EDx52display.exe
@@ -29,12 +30,10 @@ jobs:
     - name: Prepare Release Directory
       run: |
         mkdir EDx52Display
-        cp EDx52display.exe conf.yaml LICENSE README.md names DepInclude ./EDx52Display
+        Copy-Item -Path EDx52display.exe,conf.yaml,LICENSE,README.md,names,DepInclude -Destination .\EDx52Display -Recurse
 
     - name: Create Release Zip
-      run: |
-        apt-get update && apt-get install -y zip
-        zip -r Release.zip ./EDx52Display
+      run: powershell Compress-Archive -Path .\EDx52Display\* -DestinationPath .\Release.zip
 
     - name: Upload Release Artifact
       uses: actions/upload-artifact@v4
