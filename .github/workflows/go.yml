@@ -6,7 +6,7 @@ on:
       version:
         description: 'Release version (e.g., 0.1.2)'
         required: true
-        default: '0.1.2'
+        default: 'x.x.x'
 
 jobs:
   build-and-release:
