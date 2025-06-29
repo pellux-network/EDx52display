@@ -5,4 +5,3 @@ pages:
   destination: true
   location: true
   cargo: true
-# Add more pages here as you implement them
