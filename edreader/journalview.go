@@ -1,6 +1,7 @@
 package edreader
 
 import (
+	"fmt"
 	"log"
 	"sort"
 	"strings"
@@ -8,6 +9,24 @@ import (
 	"github.com/peterbn/EDx52display/edsm"
 	"github.com/peterbn/EDx52display/mfd"
 )
+
+func addValueRight(page *mfd.Page, label string, value int64) {
+	valstr := fmt.Sprintf("%dcr", value)
+	pad := 16 - (len(label) + 1 + len(valstr))
+	if pad < 0 {
+		pad = 0
+	}
+	page.Add("%s:%s%s", label, strings.Repeat(" ", pad), valstr)
+}
+
+func addIntRight(page *mfd.Page, label string, value int) {
+	valstr := fmt.Sprintf("%d", value)
+	pad := 16 - (len(label) + 1 + len(valstr))
+	if pad < 0 {
+		pad = 0
+	}
+	page.Add("%s:%s%s", label, strings.Repeat(" ", pad), valstr)
+}
 
 func RenderLocationPage(page *mfd.Page, state Journalstate) {
 	if state.Type == LocationPlanet || state.Type == LocationLanded {
@@ -69,19 +88,19 @@ func RenderEDSMSystem(page *mfd.Page, header, systemname string, systemaddress i
 
 	page.Add(mainBody.SubType)
 
-	page.Add("Bodies: %d", sys.BodyCount)
+	addIntRight(page, "Bodies", sys.BodyCount)
 
 	valinfo := <-valueinfopromise
 	if valinfo.Error == nil {
-		page.Add(printer.Sprintf("Scan:%11d", valinfo.S.EstimatedValue))
-		page.Add(printer.Sprintf("Map:%12d", valinfo.S.EstimatedValueMapped))
+		addValueRight(page, "Scan", valinfo.S.EstimatedValue)
+		addValueRight(page, "Map", valinfo.S.EstimatedValueMapped)
 
 		if len(valinfo.S.ValuableBodies) > 0 {
 			page.Add("Valuable Bodies:")
 		}
 		for _, valbody := range valinfo.S.ValuableBodies {
 			bname := valbody.ShortName(sys)
-			valstr := printer.Sprintf("%d", valbody.ValueMax)
+			valstr := printer.Sprintf("%dcr", valbody.ValueMax)
 			pad := 1
 			if len(bname)+len(valstr) < 16 {
 				pad = 16 - (len(bname) + len(valstr))
