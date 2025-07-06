@@ -1,5 +1,10 @@
 package lcdformat
 
+import (
+	"fmt"
+	"strings"
+)
+
 func NRawChar(numSpaces int, fillChar string) string {
 	var spaces string
 	for i := 0; i < numSpaces; i++ {
@@ -71,4 +76,23 @@ func Surround(str string, width int, fillChar string) string {
 	leftSpaces := totalSpaces / 2
 	rightSpaces := totalSpaces - leftSpaces
 	return NRawChar(leftSpaces, fillChar) + str + NRawChar(rightSpaces, fillChar)
+}
+
+type StarTypeData struct {
+	Class string
+	Desc  string
+}
+
+func ParseStarTypeString(starType string) StarTypeData {
+	// Parse the star type string and return a formatted version
+	// Example input: K (Yellow-Orange) Star
+	splitST := strings.Split(starType, " ")
+	class := splitST[0]
+	description := strings.ReplaceAll(splitST[1], "(", "")
+	description = strings.ReplaceAll(description, ")", "")
+	description = fmt.Sprintf("%s %s", description, "Star")
+	return StarTypeData{
+		Class: class,
+		Desc:  description,
+	}
 }

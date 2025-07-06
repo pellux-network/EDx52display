@@ -7,41 +7,39 @@ import (
 	"strings"
 
 	"github.com/pellux-network/EDx52display/edsm"
+	"github.com/pellux-network/EDx52display/lcdformat"
 	"github.com/pellux-network/EDx52display/mfd"
 )
 
-func addValueRight(page *mfd.Page, label string, value int64) {
-	valstr := printer.Sprintf("%dcr", value)
-	pad := 16 - (len(label) + 1 + len(valstr))
-	if pad < 0 {
-		pad = 0
+// Gets system body information from EDSM
+func GetEDSMBodies(systemaddress int64) (*edsm.System, error) {
+	sysinfo := <-edsm.GetSystemBodies(systemaddress)
+	if sysinfo.Error != nil {
+		return nil, fmt.Errorf("unable to fetch system information: %w", sysinfo.Error)
 	}
-	page.Add("%s:%s%s", label, strings.Repeat(" ", pad), valstr)
+	sys := sysinfo.S
+	if sys.ID64 == 0 {
+		return nil, fmt.Errorf("no EDSM data for system address %d", systemaddress)
+	}
+	return &sys, nil
 }
 
-func addIntRight(page *mfd.Page, label string, value int) {
-	valstr := fmt.Sprintf("%d", value)
-	pad := 16 - (len(label) + 1 + len(valstr))
-	if pad < 0 {
-		pad = 0
+// Gets system monetary values from EDSM
+func GetEDSMSystemValue(systemaddress int64) (*edsm.System, error) {
+	valueinfopromise := edsm.GetSystemValue(systemaddress)
+	valinfo := <-valueinfopromise
+	if valinfo.Error != nil {
+		return nil, fmt.Errorf("unable to fetch system value: %w", valinfo.Error)
 	}
-	page.Add("%s:%s%s", label, strings.Repeat(" ", pad), valstr)
+	return &valinfo.S, nil
 }
 
+// Page rendering functions for MFD
 func RenderLocationPage(page *mfd.Page, state Journalstate) {
 	if state.Type == LocationPlanet || state.Type == LocationLanded {
-		RenderEDSMBody(page, "     Planet     ", state.Location.Body, state.Location.SystemAddress, state.Location.BodyID)
+		ApplyBodyPage(page, "GRND SYS", state.Location.Body, state.Location.SystemAddress, state.Location.BodyID)
 	} else {
-		RenderEDSMSystem(page, "     System     ", state.Location.StarSystem, state.Location.SystemAddress)
-	}
-}
-
-func RenderFSDTarget(page *mfd.Page, state Journalstate) {
-	header := fmt.Sprintf("FSD Target: %d", state.EDSMTarget.RemainingJumpsInRoute)
-	if state.EDSMTarget.SystemAddress == 0 {
-		page.Add("No Destination")
-	} else {
-		RenderEDSMSystem(page, header, state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
+		ApplySystemPage(page, "CUR SYSTEM", state.Location.StarSystem, state.Location.SystemAddress, &state)
 	}
 }
 
@@ -64,58 +62,77 @@ func RenderDestinationPage(page *mfd.Page, state Journalstate) {
 	if state.Destination.SystemAddress != 0 &&
 		state.Destination.SystemAddress == state.Location.SystemAddress &&
 		state.Destination.BodyID != 0 {
-		page.Add("  Local Target  ")
+		page.Add("LOCAL TGT")
 		page.Add(state.Destination.Name)
-		RenderEDSMBody(page, "", state.Destination.Name, state.Location.SystemAddress, state.Destination.BodyID)
+		ApplyBodyPage(page, "", state.Destination.Name, state.Location.SystemAddress, state.Destination.BodyID)
 	} else if state.EDSMTarget.SystemAddress != 0 {
-		header := fmt.Sprintf("FSD Target: %d", state.EDSMTarget.RemainingJumpsInRoute)
-		RenderEDSMSystem(page, header, state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
+		// header := fmt.Sprintf("FSD Target: %d", state.EDSMTarget.RemainingJumpsInRoute)
+		header := fmt.Sprintf("NEXT JUMP")
+
+		ApplySystemPage(page, header, state.EDSMTarget.Name, state.EDSMTarget.SystemAddress, &state)
 	} else {
 		page.Add(" No Destination ")
 	}
 }
 
-func RenderEDSMSystem(page *mfd.Page, header, systemname string, systemaddress int64) {
-	sysinfopromise := edsm.GetSystemBodies(systemaddress)
-	valueinfopromise := edsm.GetSystemValue(systemaddress)
-
-	page.Add(header)
-	page.Add(systemname)
-
-	sysinfo := <-sysinfopromise
-
-	if sysinfo.Error != nil {
-		log.Println("Unable to fetch system information: ", sysinfo.Error)
-		page.Add("Sysinfo lookup error")
+// Page assembly functions for MFD
+func ApplySystemPage(page *mfd.Page, header, systemname string, systemaddress int64, state *Journalstate) {
+	// Fetch system body information
+	sys, err := GetEDSMBodies(systemaddress)
+	if err != nil {
+		log.Println("Error fetching EDSM data: ", err)
 		return
 	}
-	sys := sysinfo.S
-	if sys.ID64 == 0 {
-		page.Add("No EDSM data")
+
+	// Fetch system monetary values
+	values, err := GetEDSMSystemValue(systemaddress)
+	if err != nil {
+		log.Println("Error fetching EDSM system value: ", err)
 		return
 	}
 
 	mainBody := sys.MainStar()
-	if mainBody.IsScoopable {
-		page.Add("Scoopable")
-	} else {
-		page.Add("Not scoopable")
-	}
-
-	page.Add(mainBody.SubType)
-
-	addIntRight(page, "Bodies", sys.BodyCount)
-
-	valinfo := <-valueinfopromise
-	if valinfo.Error == nil {
-		addValueRight(page, "Scan", valinfo.S.EstimatedValue)
-		addValueRight(page, "Map", valinfo.S.EstimatedValueMapped)
-
-		if len(valinfo.S.ValuableBodies) > 0 {
-			page.Add("Valuable Bodies:")
+	newHeader := header
+	// Format the header based on the header title
+	if header == "NEXT JUMP" || header == "CUR SYSTEM" {
+		// Add FUEL indicator if star is scoopable
+		if mainBody.IsScoopable {
+			newHeader = lcdformat.SpaceBetween([]string{header, "FUEL"}, 16)
+			page.Add(newHeader)
+		} else {
+			page.Add(header)
 		}
-		for _, valbody := range valinfo.S.ValuableBodies {
-			bname := valbody.ShortName(sys)
+
+	} else {
+		page.Add(header)
+	}
+	// Add the system name line to the page
+	page.Add(systemname)
+
+	// Add the star class and remaining jumps
+	// page.Add("Star: %s", mainBody.SubType)
+	starTypeData := lcdformat.ParseStarTypeString(mainBody.SubType)
+	jumps := ""
+
+	if state != nil && header == "NEXT JUMP" {
+		jumps = fmt.Sprintf("J:%d", state.EDSMTarget.RemainingJumpsInRoute)
+	}
+	page.Add(lcdformat.SpaceBetween([]string{
+		fmt.Sprintf("CLS:%s", starTypeData.Class),
+		jumps,
+	}, 16))
+	// Add the main star information
+	page.Add(starTypeData.Desc)
+	// Add system body count and estimated values
+	page.Add(lcdformat.SpaceBetween([]string{"Bodies:", printer.Sprintf("%d", sys.BodyCount)}, 16))
+	page.Add(lcdformat.SpaceBetween([]string{"Scan:", printer.Sprintf("%dcr", values.EstimatedValue)}, 16))
+	page.Add(lcdformat.SpaceBetween([]string{"Map:", printer.Sprintf("%dcr", values.EstimatedValueMapped)}, 16))
+
+	// Print valuable bodies if available
+	if len(values.ValuableBodies) > 0 {
+		page.Add("Valuable Bodies:")
+		for _, valbody := range values.ValuableBodies {
+			bname := valbody.ShortName(*sys)
 			valstr := printer.Sprintf("%dcr", valbody.ValueMax)
 			pad := 1
 			if len(bname)+len(valstr) < 16 {
@@ -126,6 +143,7 @@ func RenderEDSMSystem(page *mfd.Page, header, systemname string, systemaddress i
 		}
 	}
 
+	// Evaluate presence of landable bodies and materials
 	landables := []edsm.Body{}
 	matLocations := map[string][]edsm.Body{}
 
@@ -143,38 +161,40 @@ func RenderEDSMSystem(page *mfd.Page, header, systemname string, systemaddress i
 		}
 	}
 
-	if len(landables) == 0 {
+	// Add prospecting information if landable bodies are present
+	if len(landables) > 0 {
+		page.Add("Prospecting:")
+		matlist := []string{}
+		for mat := range matLocations {
+			matlist = append(matlist, mat)
+			bodies := matLocations[mat]
+			sort.Slice(bodies, func(i, j int) bool { return bodies[i].Materials[mat] > bodies[j].Materials[mat] })
+		}
+
+		sort.Slice(matlist, func(i, j int) bool {
+			matA := matlist[i]
+			matB := matlist[j]
+			a := matLocations[matA]
+			b := matLocations[matB]
+			if len(a) == len(b) {
+				return a[0].Materials[matA] > b[0].Materials[matB]
+			}
+			return len(a) > len(b)
+
+		})
+		for _, mat := range matlist {
+			bodies := matLocations[mat]
+			page.Add("%s %d", mat, len(bodies))
+			b := bodies[0]
+			page.Add("%s: %.2f%%", b.ShortName(*sys), b.Materials[mat])
+		}
+	} else {
 		return
 	}
 
-	page.Add("Prospecting:")
-	matlist := []string{}
-	for mat := range matLocations {
-		matlist = append(matlist, mat)
-		bodies := matLocations[mat]
-		sort.Slice(bodies, func(i, j int) bool { return bodies[i].Materials[mat] > bodies[j].Materials[mat] })
-	}
-
-	sort.Slice(matlist, func(i, j int) bool {
-		matA := matlist[i]
-		matB := matlist[j]
-		a := matLocations[matA]
-		b := matLocations[matB]
-		if len(a) == len(b) {
-			return a[0].Materials[matA] > b[0].Materials[matB]
-		}
-		return len(a) > len(b)
-
-	})
-	for _, mat := range matlist {
-		bodies := matLocations[mat]
-		page.Add("%s %d", mat, len(bodies))
-		b := bodies[0]
-		page.Add("%s: %.2f%%", b.ShortName(sys), b.Materials[mat])
-	}
 }
 
-func RenderEDSMBody(page *mfd.Page, header, bodyName string, systemaddress, bodyid int64) {
+func ApplyBodyPage(page *mfd.Page, header, bodyName string, systemaddress, bodyid int64) {
 	sysinfopromise := edsm.GetSystemBodies(systemaddress)
 	page.Add(header)
 	page.Add(bodyName)
