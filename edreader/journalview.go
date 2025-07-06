@@ -46,6 +46,13 @@ func RenderFSDTarget(page *mfd.Page, state Journalstate) {
 }
 
 func RenderDestinationPage(page *mfd.Page, state Journalstate) {
+	// Show splash screen if enabled
+	if state.ShowSplashScreen {
+		page.Add("################")
+		page.Add("EDx52display v0.2.0")
+		page.Add("################")
+		return
+	}
 	// Show arrival page if arrived at FSD target
 	if state.ArrivedAtFSDTarget {
 		page.Add("################")

@@ -36,8 +36,10 @@ type Journalstate struct {
 	Destination
 	ArrivedAtFSDTarget     bool
 	ArrivedAtFSDTargetTime time.Time
-	LastFSDTargetSystem    string // NEW: for arrival detection
-	LastFSDTargetAddress   int64  // NEW: for arrival detection
+	LastFSDTargetSystem    string
+	LastFSDTargetAddress   int64
+	ShowSplashScreen       bool      // NEW: splash flag
+	SplashScreenStartTime  time.Time // NEW: splash start time
 }
 
 // Location indicates the players current location in the game
@@ -123,11 +125,27 @@ func (p *parser) getFloat(field string) (float64, bool) {
 var printer = message.NewPrinter(language.English)
 
 var (
-	lastJournalFile    string
-	lastJournalOffset  int64
-	lastJournalState   Journalstate
-	lastStatusFileSize int64 // NEW: for status file change detection
+	lastJournalFile     string
+	lastJournalOffset   int64
+	lastJournalState    Journalstate
+	lastStatusFileSize  int64  // NEW: for status file change detection
+	firstEnabledPageKey string // NEW: track first enabled page
 )
+
+func init() {
+	lastJournalState.ShowSplashScreen = true
+	lastJournalState.SplashScreenStartTime = time.Now()
+}
+
+// Call this at startup after loading config, e.g. in main or Start()
+func SetFirstEnabledPageKey(cfg map[string]bool) {
+	for _, key := range []string{"destination", "location", "cargo"} {
+		if cfg[key] {
+			firstEnabledPageKey = key
+			break
+		}
+	}
+}
 
 // handleJournalFile reads only new lines from the journal file since the last read.
 func handleJournalFile(filename string) {
@@ -179,6 +197,8 @@ func handleJournalFile(filename string) {
 	pos, _ := file.Seek(0, 1)
 	lastJournalFile = filename
 	lastJournalOffset = pos
+
+	checkSplashScreen()
 }
 
 // handleStatusFile reads Status.json for the current destination
@@ -233,6 +253,8 @@ func handleStatusFile(filename string) {
 
 	// After updating Destination, check for arrival
 	checkArrival()
+
+	checkSplashScreen()
 }
 
 // ParseJournalLine parses a single line of the journal and returns the new state after parsing.
@@ -378,7 +400,7 @@ func eLoadout(p parser) {
 
 func checkArrival() {
 	// Only clear arrival state if a new target is set, or N seconds have passed
-	const arrivalTimeout = 15 * time.Second // <-- Change this value as desired
+	const arrivalTimeout = 10 * time.Second // <-- Change this value as desired
 	if lastJournalState.ArrivedAtFSDTarget {
 		if lastJournalState.EDSMTarget.SystemAddress != 0 || // new FSD target
 			lastJournalState.Destination.SystemAddress != 0 || // local target
@@ -386,6 +408,30 @@ func checkArrival() {
 				time.Since(lastJournalState.ArrivedAtFSDTargetTime) > arrivalTimeout) {
 			lastJournalState.ArrivedAtFSDTarget = false
 			lastJournalState.ArrivedAtFSDTargetTime = time.Time{}
+		}
+	}
+}
+
+func checkSplashScreen() {
+	const splashTimeout = 10 * time.Second
+	if lastJournalState.ShowSplashScreen {
+		timeoutPassed := time.Since(lastJournalState.SplashScreenStartTime) > splashTimeout
+
+		firstPageReady := false
+		switch firstEnabledPageKey {
+		case "destination":
+			firstPageReady = lastJournalState.Destination.SystemAddress != 0 ||
+				lastJournalState.EDSMTarget.SystemAddress != 0
+		case "location":
+			firstPageReady = lastJournalState.Location.SystemAddress != 0
+		case "cargo":
+			firstPageReady = len(currentCargo.Inventory) > 0
+		default:
+			firstPageReady = true // fallback: don't block forever
+		}
+
+		if timeoutPassed && firstPageReady {
+			lastJournalState.ShowSplashScreen = false
 		}
 	}
 }
