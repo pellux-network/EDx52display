@@ -4,22 +4,13 @@
 
 # EDx52display
 
-Seamlessly reads Elite Dangerous journal data and presents real-time system, planet, and cargo information on your Saitek/Logitech X52 Pro MFD.
+Seamlessly reads Elite Dangerous journal data and presents real-time system, planet, and cargo information on your Saitek/Logitech X52 Pro MFD. Updated and Maintained
 
-*Please note that this software only works with the X52 Pro. The regular X52 HOTAS does not support third-party software for the MFD.*
+> **Note:** *This software only works with the Saitek/Logitech X52 Pro. The standard X52 HOTAS does not support third-party software for the MFD.*
 
-### NOTE 1: This fork modernizes and maintains the original app, fixing journal parsing to prevent freezes and improve efficiency. Recent updates include:
-- **Robust line-by-line journal reading for stability and speed**
-- **Improved error handling and logging**
-- **Configurable page visibility**
-- **Compatibility updates for the latest Elite Dangerous journal formats and commodites**
-- **UX improvements and general polishing**
-- **New Features**
+> **Note:** *It is recommended to run a tool that uploads data to EDSM, such as [ED Market Connector](https://github.com/Marginal/EDMarketConnector). Doing this will ensure that any new discoveries can be shown on the display.*
 
 ※*Development is ongoing. See the [changelog](https://github.com/pellux-network/EDx52display/blob/master/CHANGELOG.md) for details on recent fixes and features.*
-
-### NOTE 2: It is recommended to run a tool that uploads data to EDSM, such as [ED Market Connector](https://github.com/Marginal/EDMarketConnector).
-Doing this will ensure that any new discoveries can be shown on the display.
 
 ## Running
 
