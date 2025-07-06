@@ -9,6 +9,7 @@
 ### Changed
 - Polling to OS-level notifications, faster and more efficient
 - Most value formatting to be right-aligned, may change more in future releases
+- Credit value formatting to include commas in the appropriate places for better readability
 
 ### Fixed
 - Target page sometimes displaying unlocalized name
