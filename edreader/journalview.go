@@ -11,7 +11,7 @@ import (
 )
 
 func addValueRight(page *mfd.Page, label string, value int64) {
-	valstr := fmt.Sprintf("%dcr", value)
+	valstr := printer.Sprintf("%dcr", value)
 	pad := 16 - (len(label) + 1 + len(valstr))
 	if pad < 0 {
 		pad = 0

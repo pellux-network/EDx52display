@@ -1,6 +1,6 @@
 # Changelog
 
-## [v0.2.0] - XX-XX-XXXX
+## [v0.2.0] - XX-XX-XXXX [PLANNED RELEASE]
 
 ### Added
 - Jumps remaining to FSD Target page
@@ -9,6 +9,7 @@
 ### Changed
 - Polling to OS-level notifications, faster and more efficient
 - Most value formatting to be right-aligned, may change more in future releases
+- Credit value formatting to include commas in the appropriate places for better readability
 
 ### Fixed
 - Target page sometimes displaying unlocalized name
