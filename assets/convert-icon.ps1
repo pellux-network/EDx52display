@@ -1,0 +1,30 @@
+# If anyone sees this and wonders why I'm using individual PNGs instead of a single SVG file,
+# it's because the "-define icon:auto-resize=48,32,24,16" option in magick convert does not 
+# seem to work with multiple svg files for different sizes.
+# 
+# If you know a way to do this, please let me know.
+
+# create a new directory for the png files
+$PngDir = ".\temp"
+$PngDirExists = Test-Path -Path $PngDir
+
+if (!$PngDirExists) {
+    New-Item -ItemType Directory -Path $PngDir
+} else {
+    Remove-Item -Path $PngDir -Recurse -Force
+    New-Item -ItemType Directory -Path $PngDir
+}
+# convert the svg file to png files of different sizes
+magick convert -background none icon.svg -resize 256x256 pngs/icon-256.png
+magick convert -background none icon.svg -resize 128x128 pngs/icon-128.png
+magick convert -background none icon.svg -resize 64x64 pngs/icon-64.png
+magick convert -background none icon.svg -resize 48x48 pngs/icon-48.png
+magick convert -background none icon-small.svg -resize 32x32 pngs/icon-32.png
+magick convert -background none icon-small.svg -resize 24x24 pngs/icon-24.png
+magick convert -background none icon-small.svg -resize 16x16 pngs/icon-16.png
+
+# convert the png files to an ico file
+magick convert -background transparent pngs/icon-256.png pngs/icon-128.png pngs/icon-64.png pngs/icon-48.png -background transparent pngs/icon-32.png -background transparent pngs/icon-24.png pngs/icon-16.png -background transparent ..\icon.ico
+
+# delete the png directory and its contents
+Remove-Item -Path $PngDir -Recurse -Force
