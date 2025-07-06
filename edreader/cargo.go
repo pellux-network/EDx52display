@@ -57,7 +57,7 @@ func RenderCargoPage(page *mfd.Page, _ Journalstate) {
 		page.Add("No cargo data")
 		return
 	}
-	page.Add("#Cargo: %03d/%03d#", currentCargo.Count, ModulesInfoCargoCapacity())
+	page.Add("Cargo: %04d/%04d", currentCargo.Count, ModulesInfoCargoCapacity())
 	if len(currentCargo.Inventory) == 0 {
 		page.Add("Cargo Hold Empty")
 		return
