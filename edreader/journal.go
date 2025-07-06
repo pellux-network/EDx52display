@@ -64,9 +64,9 @@ type EDSMTarget struct {
 
 // Destination holds the current destination info from Status.json
 type Destination struct {
-	SystemID int64
-	BodyID   int64
-	Name     string
+	SystemAddress int64
+	BodyID        int64
+	Name          string
 }
 
 const (
@@ -223,9 +223,9 @@ func handleStatusFile(filename string) {
 			}
 		}
 		lastJournalState.Destination = Destination{
-			SystemID: sysID,
-			BodyID:   bodyID,
-			Name:     name,
+			SystemAddress: sysID,
+			BodyID:        bodyID,
+			Name:          name,
 		}
 	} else {
 		lastJournalState.Destination = Destination{}
@@ -381,7 +381,7 @@ func checkArrival() {
 	const arrivalTimeout = 15 * time.Second // <-- Change this value as desired
 	if lastJournalState.ArrivedAtFSDTarget {
 		if lastJournalState.EDSMTarget.SystemAddress != 0 || // new FSD target
-			lastJournalState.Destination.SystemID != 0 || // local target
+			lastJournalState.Destination.SystemAddress != 0 || // local target
 			(!lastJournalState.ArrivedAtFSDTargetTime.IsZero() &&
 				time.Since(lastJournalState.ArrivedAtFSDTargetTime) > arrivalTimeout) {
 			lastJournalState.ArrivedAtFSDTarget = false

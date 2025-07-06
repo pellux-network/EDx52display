@@ -54,8 +54,8 @@ func RenderDestinationPage(page *mfd.Page, state Journalstate) {
 		return
 	}
 	// Show local destination if set, else FSD target, else "No Destination"
-	if state.Destination.SystemID != 0 &&
-		state.Destination.SystemID == state.Location.SystemAddress &&
+	if state.Destination.SystemAddress != 0 &&
+		state.Destination.SystemAddress == state.Location.SystemAddress &&
 		state.Destination.BodyID != 0 {
 		page.Add("# Local Target #")
 		page.Add(state.Destination.Name)
