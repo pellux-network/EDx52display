@@ -63,6 +63,10 @@ This ensures you always have the most relevant data for your immediate surroundi
 
 This page displays the current occupancy of your cargo hold along with a detailed list of specific items and their respective quantities.
 
+<p align="center">
+  <img src="./assets/cargodiagram.png" alt="Cargo Screen Diagram">
+</>
+
 <p style="font-size: 12px" align="right">
   <a href="#edx52display">Return to top</a>
 </p>
