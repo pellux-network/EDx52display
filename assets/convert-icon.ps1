@@ -9,22 +9,24 @@ $PngDir = ".\temp"
 $PngDirExists = Test-Path -Path $PngDir
 
 if (!$PngDirExists) {
-    New-Item -ItemType Directory -Path $PngDir
+    New-Item -ItemType Directory -Path $PngDir > $null
 } else {
     Remove-Item -Path $PngDir -Recurse -Force
-    New-Item -ItemType Directory -Path $PngDir
+    New-Item -ItemType Directory -Path $PngDir > $null
 }
 # convert the svg file to png files of different sizes
-magick convert -background none icon.svg -resize 256x256 pngs/icon-256.png
-magick convert -background none icon.svg -resize 128x128 pngs/icon-128.png
-magick convert -background none icon.svg -resize 64x64 pngs/icon-64.png
-magick convert -background none icon.svg -resize 48x48 pngs/icon-48.png
-magick convert -background none icon-small.svg -resize 32x32 pngs/icon-32.png
-magick convert -background none icon-small.svg -resize 24x24 pngs/icon-24.png
-magick convert -background none icon-small.svg -resize 16x16 pngs/icon-16.png
+magick convert -background none icon.svg -resize 256x256 $PngDir/icon-256.png
+magick convert -background none icon.svg -resize 128x128 $PngDir/icon-128.png
+magick convert -background none icon.svg -resize 64x64 $PngDir/icon-64.png
+magick convert -background none icon.svg -resize 48x48 $PngDir/icon-48.png
+magick convert -background none icon-small.svg -resize 32x32 $PngDir/icon-32.png
+magick convert -background none icon-small.svg -resize 24x24 $PngDir/icon-24.png
+magick convert -background none icon-small.svg -resize 16x16 $PngDir/icon-16.png
 
 # convert the png files to an ico file
-magick convert -background transparent pngs/icon-256.png pngs/icon-128.png pngs/icon-64.png pngs/icon-48.png -background transparent pngs/icon-32.png -background transparent pngs/icon-24.png pngs/icon-16.png -background transparent ..\icon.ico
+magick convert -background transparent $PngDir/icon-256.png $PngDir/icon-128.png $PngDir/icon-64.png $PngDir/icon-48.png -background transparent $PngDir/icon-32.png -background transparent $PngDir/icon-24.png $PngDir/icon-16.png -background transparent ..\icon.ico
 
 # delete the png directory and its contents
 Remove-Item -Path $PngDir -Recurse -Force
+
+Write-Host "Conversion complete. The ICO file is located at ..\icon.ico"
