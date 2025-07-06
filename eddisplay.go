@@ -13,10 +13,10 @@ import (
 	_ "embed"
 
 	"github.com/getlantern/systray"
-	"github.com/peterbn/EDx52display/conf"
-	"github.com/peterbn/EDx52display/edreader"
-	"github.com/peterbn/EDx52display/edsm"
-	"github.com/peterbn/EDx52display/mfd"
+	"github.com/pellux-network/EDx52display/conf"
+	"github.com/pellux-network/EDx52display/edreader"
+	"github.com/pellux-network/EDx52display/edsm"
+	"github.com/pellux-network/EDx52display/mfd"
 )
 
 // TextLogFormatter gives me custom command-line formatting

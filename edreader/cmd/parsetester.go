@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/peterbn/EDx52display/edreader"
+	"github.com/pellux-network/EDx52display/edreader"
 )
 
 func main() {

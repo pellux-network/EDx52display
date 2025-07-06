@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -203,7 +204,18 @@ func handleStatusFile(filename string) {
 	if err == nil && len(destObj) > 0 {
 		sysID, _ := jsonparser.GetInt(destObj, "System")
 		bodyID, _ := jsonparser.GetInt(destObj, "Body")
-		name, _ := jsonparser.GetString(destObj, "Name")
+		name := ""
+		nameRaw, _ := jsonparser.GetString(destObj, "Name")
+		if nameRaw != "" && !strings.HasPrefix(nameRaw, "$") {
+			name = nameRaw
+		} else {
+			nameLoc, _ := jsonparser.GetString(destObj, "Name_Localised")
+			if nameLoc != "" {
+				name = nameLoc
+			} else {
+				name = nameRaw
+			}
+		}
 		lastJournalState.Destination = Destination{
 			SystemID: sysID,
 			BodyID:   bodyID,
@@ -322,4 +334,16 @@ func eLoadout(p parser) {
 	if ok {
 		currentCargoCapacity = int(capacity)
 	}
+}
+
+func getDisplayName(line []byte) string {
+	name, _ := jsonparser.GetString(line, "Name")
+	if name != "" && !strings.HasPrefix(name, "$") {
+		return name
+	}
+	nameLoc, _ := jsonparser.GetString(line, "Name_Localised")
+	if nameLoc != "" {
+		return nameLoc
+	}
+	return name // fallback, even if it's a translation key
 }

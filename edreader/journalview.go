@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/peterbn/EDx52display/edsm"
-	"github.com/peterbn/EDx52display/mfd"
+	"github.com/pellux-network/EDx52display/edsm"
+	"github.com/pellux-network/EDx52display/mfd"
 )
 
 func addValueRight(page *mfd.Page, label string, value int64) {

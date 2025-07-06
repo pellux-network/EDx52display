@@ -8,9 +8,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/google/go-cmp/cmp"
-	"github.com/peterbn/EDx52display/conf"
-	"github.com/peterbn/EDx52display/mfd"
+	"github.com/pellux-network/EDx52display/conf"
+	"github.com/pellux-network/EDx52display/mfd"
 )
 
 // PageKey is a string identifier for each page
@@ -53,20 +54,44 @@ var (
 	Mfd     mfd.Display
 	MfdLock = sync.RWMutex{}
 	PrevMfd mfd.Display
-	tick    *time.Ticker // FIX: declare tick here
+	watcher *fsnotify.Watcher
+	stopCh  chan struct{}
 )
 
-// Start starts the Elite Dangerous journal reader routine
+// Start starts the Elite Dangerous journal reader routine using fsnotify
 func Start(cfg conf.Conf) {
 	log.Info("Starting journal listener")
 	journalfolder := cfg.ExpandJournalFolderPath()
 	log.Debugln("Looking for journal files in " + journalfolder)
 	updateMFD(journalfolder, cfg)
-	tick = time.NewTicker(time.Duration(cfg.RefreshRateMS) * time.Millisecond)
+
+	var err error
+	watcher, err = fsnotify.NewWatcher()
+	if err != nil {
+		log.Panicf("Failed to create file watcher: %v", err)
+	}
+	stopCh = make(chan struct{})
+
+	// Watch the folder for new/changed files
+	err = watcher.Add(journalfolder)
+	if err != nil {
+		log.Panicf("Failed to add watcher: %v", err)
+	}
 
 	go func() {
-		for range tick.C {
-			updateMFD(journalfolder, cfg)
+		defer watcher.Close()
+		for {
+			select {
+			case event := <-watcher.Events:
+				// Only react to writes/creates/renames
+				if event.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Rename) != 0 {
+					updateMFD(journalfolder, cfg)
+				}
+			case err := <-watcher.Errors:
+				log.Warnf("Watcher error: %v", err)
+			case <-stopCh:
+				return
+			}
 		}
 	}()
 }
@@ -98,7 +123,12 @@ func updateMFD(journalfolder string, cfg conf.Conf) {
 
 // Stop closes the watcher again
 func Stop() {
-	tick.Stop()
+	if stopCh != nil {
+		close(stopCh)
+	}
+	if watcher != nil {
+		watcher.Close()
+	}
 }
 
 func findJournalFile(folder string) string {

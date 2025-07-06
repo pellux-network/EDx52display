@@ -3,11 +3,12 @@ package edreader
 import (
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"os"
 	"sort"
 	"strings"
 
-	"github.com/peterbn/EDx52display/mfd"
+	"github.com/pellux-network/EDx52display/mfd"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -68,8 +69,17 @@ func RenderCargoPage(page *mfd.Page, _ Journalstate) {
 	})
 
 	for _, line := range currentCargo.Inventory {
-		page.Add("%s: %d", line.displayname(), line.Count)
+		addCargoRight(page, line.displayname(), line.Count)
 	}
+}
+
+func addCargoRight(page *mfd.Page, label string, value int) {
+	valstr := fmt.Sprintf("%d", value)
+	pad := 16 - (len(label) + 1 + len(valstr))
+	if pad < 0 {
+		pad = 0
+	}
+	page.Add("%s:%s%s", label, strings.Repeat(" ", pad), valstr)
 }
 
 func handleCargoFile(file string) {
@@ -84,22 +94,25 @@ func handleCargoFile(file string) {
 	currentCargo = cargo
 }
 
+func mapCommodities(data [][]string, symbolIdx, nameIdx int) {
+	for _, com := range data[1:] {
+		symbol := com[symbolIdx]
+		symbol = strings.ToLower(symbol)
+		name := com[nameIdx]
+		names[symbol] = name
+	}
+}
+
 func initNameMap() {
 	commodity := readCsvFile(commodityNameFile)
 	rareCommodity := readCsvFile(rareCommodityNameFile)
 
 	names = make(map[string]string)
 
-	mapCommodities := func(comms [][]string) {
-		for _, com := range comms[1:] { //skipping the header line
-			symbol := com[1]
-			symbol = strings.ToLower(symbol)
-			name := com[3]
-			names[symbol] = name
-		}
-	}
-	mapCommodities(commodity)
-	mapCommodities(rareCommodity)
+	// commodity.csv: symbol at 1, name at 3
+	mapCommodities(commodity, 1, 3)
+	// rare_commodity.csv: symbol at 1, name at 4
+	mapCommodities(rareCommodity, 1, 4)
 }
 
 func readCsvFile(filename string) [][]string {
