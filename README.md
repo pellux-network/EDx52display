@@ -16,7 +16,7 @@ Seamlessly reads Elite Dangerous journal data and presents real-time system, pla
 - **UX improvements and general polishing**
 - **New Features**
 
-*Development is ongoing—see the [changelog](https://github.com/pellux-network/EDx52display/blob/master/CHANGELOG.md) for details on recent fixes and features.*
+※*Development is ongoing. See the [changelog](https://github.com/pellux-network/EDx52display/blob/master/CHANGELOG.md) for details on recent fixes and features.*
 
 ### NOTE 2: It is recommended to run a tool that uploads data to EDSM, such as [ED Market Connector](https://github.com/Marginal/EDMarketConnector).
 Doing this will ensure that any new discoveries can be shown on the display.
@@ -24,10 +24,12 @@ Doing this will ensure that any new discoveries can be shown on the display.
 ## Running
 
 ### Users
-Simply download the latest release zip from the [releases](https://github.com/pellux-network/EDx52display/releases/latest) page. Unzip it into a location of your choosing such as `C:\Games\`. If you haven't modified Elite Dangerous' journal path and don't want to disable any pages, simply run the included `.exe` and your MFD should immediately begin loading. If your journal file location is changed or you wish to disable any pages, check the [Configuration](#configuration) section below.
+Simply download the latest release zip from the [Releases](https://github.com/pellux-network/EDx52display/releases/latest) page. Unzip it into a location of your choosing such as `C:\Games\`. If you haven't modified Elite Dangerous' journal path and don't want to disable any pages, simply run the included `.exe` and your MFD should immediately begin loading. If your journal file location is changed or you wish to disable any pages, check the [Configuration](#configuration) section below.
 
 ### Developers
-Build the app by running `release.ps1` or running `go build -v -o EDx52display.exe` making sure to have the latest version of Go installed.
+Build the app by running `release.ps1` or running `go build -v -o EDx52display.exe` making sure to have the latest version of Go installed. You can always clone the repo or download its zip and use this method to get the latest changes described in the Planned Release section of the [changelog](https://github.com/pellux-network/EDx52display/blob/master/CHANGELOG.md)
+
+※*To close the app, right click its icon in the system tray and click `Quit`*
 
 ## Output
 
@@ -72,7 +74,7 @@ Pressing this button will update with new data, which is useful if you have rece
 
 The application uses a `conf.yaml` file in the installation folder to configure its behavior.
 
-Example `conf.yaml`:
+`conf.yaml`:
 ```yaml
 journalsfolder: "%USERPROFILE%\\Saved Games\\Frontier Developments\\Elite Dangerous"
 
@@ -88,7 +90,7 @@ pages:
   - `location`: Show the Current Location/Planet page.
   - `cargo`: Show the Cargo page.
 
-If you disable a page, it will not appear on the MFD
+※*If you disable a page, it will not appear on the MFD*
 
 ## Troubleshooting
 
