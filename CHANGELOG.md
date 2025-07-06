@@ -5,6 +5,7 @@
 ### Added
 - Jumps remaining to FSD Target page
 - Arrival screen when route is complete
+- Loading splashscreen
 - Support for the Panther Clipper's massive cargo hold by displaying 4 digits on the cargo screen
 
 ### Changed
