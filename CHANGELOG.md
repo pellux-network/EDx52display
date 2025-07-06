@@ -1,6 +1,6 @@
 # Changelog
 
-## [v0.2.0] - XX-XX-XXXX
+## [v0.2.0] - XX-XX-XXXX [PLANNED RELEASE]
 
 ### Added
 - Jumps remaining to FSD Target page
