@@ -3,7 +3,8 @@
 ## [v0.2.0] - XX-XX-XXXX
 
 ### Added
-- Jumps remaining to FSD Target page with arrival screen
+- Jumps remaining to FSD Target page
+- Arrival screen when route is complete
 
 ### Changed
 - Polling to OS-level notifications, faster and more efficient
@@ -13,6 +14,10 @@
 - Target page sometimes displaying unlocalized name
 - Rare commodities displaying the category of the commodity instead of the name
 - Outdated commodity CSVs (May still be incomplete)
+
+### Known Bugs
+- Selecting a system from the left-side external panel results in either 0 or 16 jumps remaining being displayed. This is unfortunately a bug with ED's journaling where it's actually displaying those number as jumps remaining so this will require a fix on Frontier's end
+- Arrival screen displays a few seconds after startup
 
 ## [v0.1.3] - 06-29-2025
 

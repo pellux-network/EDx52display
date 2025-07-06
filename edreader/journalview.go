@@ -30,9 +30,9 @@ func addIntRight(page *mfd.Page, label string, value int) {
 
 func RenderLocationPage(page *mfd.Page, state Journalstate) {
 	if state.Type == LocationPlanet || state.Type == LocationLanded {
-		RenderEDSMBody(page, "#    Planet    #", state.Location.Body, state.Location.SystemAddress, state.Location.BodyID)
+		RenderEDSMBody(page, "     Planet     ", state.Location.Body, state.Location.SystemAddress, state.Location.BodyID)
 	} else {
-		RenderEDSMSystem(page, "#    System    #", state.Location.StarSystem, state.Location.SystemAddress)
+		RenderEDSMSystem(page, "     System     ", state.Location.StarSystem, state.Location.SystemAddress)
 	}
 }
 
@@ -49,7 +49,7 @@ func RenderDestinationPage(page *mfd.Page, state Journalstate) {
 	// Show arrival page if arrived at FSD target
 	if state.ArrivedAtFSDTarget {
 		page.Add("################")
-		page.Add("# You have arrived #")
+		page.Add("  You have arrived  ")
 		page.Add("################")
 		return
 	}
@@ -57,14 +57,14 @@ func RenderDestinationPage(page *mfd.Page, state Journalstate) {
 	if state.Destination.SystemAddress != 0 &&
 		state.Destination.SystemAddress == state.Location.SystemAddress &&
 		state.Destination.BodyID != 0 {
-		page.Add("# Local Target #")
+		page.Add("  Local Target  ")
 		page.Add(state.Destination.Name)
 		RenderEDSMBody(page, "", state.Destination.Name, state.Location.SystemAddress, state.Destination.BodyID)
 	} else if state.EDSMTarget.SystemAddress != 0 {
 		header := fmt.Sprintf("FSD Target: %d", state.EDSMTarget.RemainingJumpsInRoute)
 		RenderEDSMSystem(page, header, state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
 	} else {
-		page.Add("No Destination")
+		page.Add(" No Destination ")
 	}
 }
 
