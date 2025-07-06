@@ -1,3 +1,4 @@
+![EDx52display Logo](./assets/giticon.png)
 # EDx52display
 
 Reading Elite: Dangerous journal information and displaying on a Logitech X52 PRO MFD.
