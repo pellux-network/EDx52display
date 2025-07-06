@@ -41,7 +41,7 @@ jobs:
         Copy-Item -Path EDx52display.exe,conf.yaml,LICENSE,README.md,names,bin -Destination .\EDx52Display -Recurse
 
     - name: Create Release Zip
-      run: powershell Compress-Archive -Path .\EDx52Display\* -DestinationPath .\Release-${{ github.event.inputs.version }}.zip
+      run: powershell Compress-Archive -Path .\EDx52Display -DestinationPath .\EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
 
     - name: Create GitHub Release
       id: create_release
