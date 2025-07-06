@@ -31,6 +31,10 @@ Build the app by running `release.ps1` or running `go build -v -o EDx52display.e
 
 ※*To close the app, right click its icon in the system tray and click `Quit`*
 
+<p style="font-size: 12px" align="right">
+  <a href="#edx52display">Return to top</a>
+</p>
+
 ## Output
 
 Running this application will show 3 pages of information on your MFD. Most of this information is sourced from EDSM.net.
@@ -59,6 +63,10 @@ This ensures you always have the most relevant data for your immediate surroundi
 
 This page displays the current occupancy of your cargo hold along with a detailed list of specific items and their respective quantities.
 
+<p style="font-size: 12px" align="right">
+  <a href="#edx52display">Return to top</a>
+</p>
+
 ## Buttons / Navigation
 
 This tool will use both function wheels on the MFD.
@@ -69,6 +77,10 @@ The right wheel will scroll a page up and down
 
 **Pressing** the right wheel will refresh data from EDSM. The display will cache values from EDSM to avoid hitting their API rate limit. 
 Pressing this button will update with new data, which is useful if you have recently scanned the system and uploaded data with ED Market Connector or similar tools.
+
+<p style="font-size: 12px" align="right">
+  <a href="#edx52display">Return to top</a>
+</p>
 
 ## Configuration
 
@@ -92,6 +104,10 @@ pages:
 
 ※*If you disable a page, it will not appear on the MFD*
 
+<p style="font-size: 12px" align="right">
+  <a href="#edx52display">Return to top</a>
+</p>
+
 ## Troubleshooting
 
 This application reads the journal files of your elite dangerous installation.
@@ -109,6 +125,10 @@ uses a different location, you should update the conf.yaml file in the installat
   - debug 
   - trace
 
+<p style="font-size: 12px" align="right">
+  <a href="#edx52display">Return to top</a>
+</p>
+
 ## Credits
 
 ### Original Credits
@@ -119,3 +139,7 @@ for the CSV files of names for all the commodities.
 ### Fork Credits
 - Thanks to original author [Peter Pakkenberg](https://github.com/peterbn) and the author I forked from [rinkulu](https://github.com/rinkulu/)
 - Thanks to [pbxx](https://github.com/pbxx) for the icons and help with page layouts
+
+<p style="font-size: 12px" align="right">
+  <a href="#edx52display">Return to top</a>
+</p>
