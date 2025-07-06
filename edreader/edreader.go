@@ -63,6 +63,10 @@ func Start(cfg conf.Conf) {
 	log.Info("Starting journal listener")
 	journalfolder := cfg.ExpandJournalFolderPath()
 	log.Debugln("Looking for journal files in " + journalfolder)
+
+	// Set the first enabled page key for splash logic
+	SetFirstEnabledPageKey(cfg.Pages)
+
 	updateMFD(journalfolder, cfg)
 
 	var err error

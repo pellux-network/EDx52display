@@ -1,4 +1,7 @@
-![EDx52display Logo](./assets/giticon.png)
+<p align="center">
+  <img src="./assets/giticon.png" alt="EDx52display Logo">
+</p>
+
 # EDx52display
 
 Reading Elite: Dangerous journal information and displaying on a Logitech X52 PRO MFD.
