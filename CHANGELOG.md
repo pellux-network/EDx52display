@@ -1,8 +1,9 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
-
 ## [v0.2.0] - XX-XX-XXXX
+
+### Added
+- Jumps remaining to FSD Target page with arrival screen
 
 ### Changed
 - Polling to OS-level notifications, faster and more efficient

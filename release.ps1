@@ -18,6 +18,6 @@ if (Test-Path .\upx\upx.exe) {
     Write-Host "UPX not found, skipping compression."
 }
 
-Copy-Item -Path EDx52display.exe,conf.yaml,LICENSE,README.md,names,DepInclude -Destination .\EDx52Display -Recurse
+Copy-Item -Path EDx52display.exe,conf.yaml,LICENSE,README.md,names,bin -Destination .\EDx52Display -Recurse
 
 7z.exe a Release-$version.zip .\EDx52Display

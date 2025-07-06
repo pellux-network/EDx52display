@@ -38,7 +38,7 @@ jobs:
     - name: Prepare Release Directory
       run: |
         mkdir EDx52Display
-        Copy-Item -Path EDx52display.exe,conf.yaml,LICENSE,README.md,names,DepInclude -Destination .\EDx52Display -Recurse
+        Copy-Item -Path EDx52display.exe,conf.yaml,LICENSE,README.md,names,bin -Destination .\EDx52Display -Recurse
 
     - name: Create Release Zip
       run: powershell Compress-Archive -Path .\EDx52Display\* -DestinationPath .\Release-${{ github.event.inputs.version }}.zip

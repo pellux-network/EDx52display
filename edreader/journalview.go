@@ -37,14 +37,22 @@ func RenderLocationPage(page *mfd.Page, state Journalstate) {
 }
 
 func RenderFSDTarget(page *mfd.Page, state Journalstate) {
+	header := fmt.Sprintf("FSD Target: %d", state.EDSMTarget.RemainingJumpsInRoute)
 	if state.EDSMTarget.SystemAddress == 0 {
-		page.Add("No FSD Target")
+		page.Add("No Destination")
 	} else {
-		RenderEDSMSystem(page, "#  FSD Target  #", state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
+		RenderEDSMSystem(page, header, state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
 	}
 }
 
 func RenderDestinationPage(page *mfd.Page, state Journalstate) {
+	// Show arrival page if arrived at FSD target
+	if state.ArrivedAtFSDTarget {
+		page.Add("################")
+		page.Add("# You have arrived #")
+		page.Add("################")
+		return
+	}
 	// Show local destination if set, else FSD target, else "No Destination"
 	if state.Destination.SystemID != 0 &&
 		state.Destination.SystemID == state.Location.SystemAddress &&
@@ -53,7 +61,8 @@ func RenderDestinationPage(page *mfd.Page, state Journalstate) {
 		page.Add(state.Destination.Name)
 		RenderEDSMBody(page, "", state.Destination.Name, state.Location.SystemAddress, state.Destination.BodyID)
 	} else if state.EDSMTarget.SystemAddress != 0 {
-		RenderEDSMSystem(page, "#  FSD Target  #", state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
+		header := fmt.Sprintf("FSD Target: %d", state.EDSMTarget.RemainingJumpsInRoute)
+		RenderEDSMSystem(page, header, state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
 	} else {
 		page.Add("No Destination")
 	}

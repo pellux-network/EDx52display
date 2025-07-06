@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -32,7 +33,11 @@ const (
 type Journalstate struct {
 	Location
 	EDSMTarget
-	Destination // NEW: add destination info
+	Destination
+	ArrivedAtFSDTarget     bool
+	ArrivedAtFSDTargetTime time.Time
+	LastFSDTargetSystem    string // NEW: for arrival detection
+	LastFSDTargetAddress   int64  // NEW: for arrival detection
 }
 
 // Location indicates the players current location in the game
@@ -52,8 +57,9 @@ type Location struct {
 
 // EDSMTarget indicates a system targeted by the FSD drive for a jump
 type EDSMTarget struct {
-	Name          string
-	SystemAddress int64
+	Name                  string
+	SystemAddress         int64
+	RemainingJumpsInRoute int // NEW: for FSD Target jumps
 }
 
 // Destination holds the current destination info from Status.json
@@ -224,6 +230,9 @@ func handleStatusFile(filename string) {
 	} else {
 		lastJournalState.Destination = Destination{}
 	}
+
+	// After updating Destination, check for arrival
+	checkArrival()
 }
 
 // ParseJournalLine parses a single line of the journal and returns the new state after parsing.
@@ -297,6 +306,25 @@ func eSupercruiseExit(p parser, state *Journalstate) {
 
 func eFSDJump(p parser, state *Journalstate) {
 	eLocation(p, state)
+	jumpSystem, _ := p.getString(starsystem)
+	jumpAddress, _ := p.getInt(systemaddress)
+	// Only trigger arrival if there was a valid FSD target (not zero/empty)
+	if (state.LastFSDTargetAddress != 0 && jumpAddress == state.LastFSDTargetAddress) ||
+		(state.LastFSDTargetSystem != "" && jumpSystem != "" && strings.EqualFold(jumpSystem, state.LastFSDTargetSystem)) {
+		// Only if the previous FSD target was actually set
+		if state.LastFSDTargetAddress != 0 || state.LastFSDTargetSystem != "" {
+			state.ArrivedAtFSDTarget = true
+			state.ArrivedAtFSDTargetTime = time.Now()
+			// Reset jumps remaining on arrival
+			state.EDSMTarget.RemainingJumpsInRoute = 0
+			// Also clear EDSMTarget.SystemAddress and Name to reflect no target
+			state.EDSMTarget.SystemAddress = 0
+			state.EDSMTarget.Name = ""
+			// Clear last FSD target so further jumps don't retrigger arrival
+			state.LastFSDTargetSystem = ""
+			state.LastFSDTargetAddress = 0
+		}
+	}
 }
 
 func eTouchDown(p parser, state *Journalstate) {
@@ -310,9 +338,21 @@ func eLiftoff(p parser, state *Journalstate) {
 }
 
 func eFSDTarget(p parser, state *Journalstate) {
-	state.EDSMTarget.SystemAddress, _ = p.getInt(systemaddress)
+	systemAddress, _ := p.getInt(systemaddress)
+	state.EDSMTarget.SystemAddress = systemAddress
 	state.EDSMTarget.Name, _ = p.getString(name)
-
+	jumps, ok := p.getInt("RemainingJumpsInRoute")
+	if ok && systemAddress != 0 {
+		state.EDSMTarget.RemainingJumpsInRoute = int(jumps)
+	} else {
+		state.EDSMTarget.RemainingJumpsInRoute = 0
+	}
+	// Save the last FSD target for arrival detection
+	state.LastFSDTargetSystem = state.EDSMTarget.Name
+	state.LastFSDTargetAddress = state.EDSMTarget.SystemAddress
+	// New target: clear arrival state
+	state.ArrivedAtFSDTarget = false
+	state.ArrivedAtFSDTargetTime = time.Time{}
 }
 
 func eApproachBody(p parser, state *Journalstate) {
@@ -333,6 +373,20 @@ func eLoadout(p parser) {
 	capacity, ok := p.getInt("CargoCapacity")
 	if ok {
 		currentCargoCapacity = int(capacity)
+	}
+}
+
+func checkArrival() {
+	// Only clear arrival state if a new target is set, or N seconds have passed
+	const arrivalTimeout = 15 * time.Second // <-- Change this value as desired
+	if lastJournalState.ArrivedAtFSDTarget {
+		if lastJournalState.EDSMTarget.SystemAddress != 0 || // new FSD target
+			lastJournalState.Destination.SystemID != 0 || // local target
+			(!lastJournalState.ArrivedAtFSDTargetTime.IsZero() &&
+				time.Since(lastJournalState.ArrivedAtFSDTargetTime) > arrivalTimeout) {
+			lastJournalState.ArrivedAtFSDTarget = false
+			lastJournalState.ArrivedAtFSDTargetTime = time.Time{}
+		}
 	}
 }
 
