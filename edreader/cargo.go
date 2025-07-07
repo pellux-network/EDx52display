@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/pellux-network/EDx52display/mfd"
@@ -49,28 +48,6 @@ var (
 func init() {
 	log.Debugln("Initializing cargo name map...")
 	initNameMap()
-}
-
-func RenderCargoPage(page *mfd.Page, _ Journalstate) {
-	// If currentCargo is nil (never loaded), show "No cargo data"
-	if currentCargo.Inventory == nil {
-		page.Add("No cargo data")
-		return
-	}
-	page.Add("Cargo: %04d/%04d", currentCargo.Count, ModulesInfoCargoCapacity())
-	if len(currentCargo.Inventory) == 0 {
-		page.Add("Cargo Hold Empty")
-		return
-	}
-	sort.Slice(currentCargo.Inventory, func(i, j int) bool {
-		a := currentCargo.Inventory[i]
-		b := currentCargo.Inventory[j]
-		return a.displayname() < b.displayname()
-	})
-
-	for _, line := range currentCargo.Inventory {
-		addCargoRight(page, line.displayname(), line.Count)
-	}
 }
 
 func addCargoRight(page *mfd.Page, label string, value int) {

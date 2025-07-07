@@ -6,42 +6,40 @@ import (
 	"sort"
 	"strings"
 
+	lcdformat "github.com/pbxx/goLCDFormat"
 	"github.com/pellux-network/EDx52display/edsm"
 	"github.com/pellux-network/EDx52display/mfd"
 )
 
-func addValueRight(page *mfd.Page, label string, value int64) {
-	valstr := printer.Sprintf("%dcr", value)
-	pad := 16 - (len(label) + 1 + len(valstr))
-	if pad < 0 {
-		pad = 0
+// Gets system body information from EDSM
+func GetEDSMBodies(systemaddress int64) (*edsm.System, error) {
+	sysinfo := <-edsm.GetSystemBodies(systemaddress)
+	if sysinfo.Error != nil {
+		return nil, fmt.Errorf("unable to fetch system information: %w", sysinfo.Error)
 	}
-	page.Add("%s:%s%s", label, strings.Repeat(" ", pad), valstr)
+	sys := sysinfo.S
+	if sys.ID64 == 0 {
+		return nil, fmt.Errorf("no EDSM data for system address %d", systemaddress)
+	}
+	return &sys, nil
 }
 
-func addIntRight(page *mfd.Page, label string, value int) {
-	valstr := fmt.Sprintf("%d", value)
-	pad := 16 - (len(label) + 1 + len(valstr))
-	if pad < 0 {
-		pad = 0
+// Gets system monetary values from EDSM
+func GetEDSMSystemValue(systemaddress int64) (*edsm.System, error) {
+	valueinfopromise := edsm.GetSystemValue(systemaddress)
+	valinfo := <-valueinfopromise
+	if valinfo.Error != nil {
+		return nil, fmt.Errorf("unable to fetch system value: %w", valinfo.Error)
 	}
-	page.Add("%s:%s%s", label, strings.Repeat(" ", pad), valstr)
+	return &valinfo.S, nil
 }
 
+// Page rendering functions for MFD
 func RenderLocationPage(page *mfd.Page, state Journalstate) {
 	if state.Type == LocationPlanet || state.Type == LocationLanded {
-		RenderEDSMBody(page, "     Planet     ", state.Location.Body, state.Location.SystemAddress, state.Location.BodyID)
+		ApplyBodyPage(page, "GRND SYS", &state)
 	} else {
-		RenderEDSMSystem(page, "     System     ", state.Location.StarSystem, state.Location.SystemAddress)
-	}
-}
-
-func RenderFSDTarget(page *mfd.Page, state Journalstate) {
-	header := fmt.Sprintf("FSD Target: %d", state.EDSMTarget.RemainingJumpsInRoute)
-	if state.EDSMTarget.SystemAddress == 0 {
-		page.Add("No Destination")
-	} else {
-		RenderEDSMSystem(page, header, state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
+		ApplySystemPage(page, "CUR SYSTEM", state.Location.StarSystem, state.Location.SystemAddress, &state)
 	}
 }
 
@@ -64,142 +62,219 @@ func RenderDestinationPage(page *mfd.Page, state Journalstate) {
 	if state.Destination.SystemAddress != 0 &&
 		state.Destination.SystemAddress == state.Location.SystemAddress &&
 		state.Destination.BodyID != 0 {
-		page.Add("  Local Target  ")
-		page.Add(state.Destination.Name)
-		RenderEDSMBody(page, "", state.Destination.Name, state.Location.SystemAddress, state.Destination.BodyID)
+
+		ApplyBodyPage(page, "LOCAL TGT", &state)
 	} else if state.EDSMTarget.SystemAddress != 0 {
-		header := fmt.Sprintf("FSD Target: %d", state.EDSMTarget.RemainingJumpsInRoute)
-		RenderEDSMSystem(page, header, state.EDSMTarget.Name, state.EDSMTarget.SystemAddress)
+		// header := fmt.Sprintf("FSD Target: %d", state.EDSMTarget.RemainingJumpsInRoute)
+		ApplySystemPage(page, "NEXT JUMP", state.EDSMTarget.Name, state.EDSMTarget.SystemAddress, &state)
 	} else {
 		page.Add(" No Destination ")
 	}
 }
 
-func RenderEDSMSystem(page *mfd.Page, header, systemname string, systemaddress int64) {
-	sysinfopromise := edsm.GetSystemBodies(systemaddress)
-	valueinfopromise := edsm.GetSystemValue(systemaddress)
-
-	page.Add(header)
-	page.Add(systemname)
-
-	sysinfo := <-sysinfopromise
-
-	if sysinfo.Error != nil {
-		log.Println("Unable to fetch system information: ", sysinfo.Error)
-		page.Add("Sysinfo lookup error")
+func RenderCargoPage(page *mfd.Page, _ Journalstate) {
+	lines := []string{}
+	// Cargo header
+	lines = append(lines, fmt.Sprintf("CARGO: %04d/%04d", currentCargo.Count, ModulesInfoCargoCapacity()))
+	// If currentCargo is nil (never loaded), show "No cargo data"
+	if currentCargo.Inventory == nil {
+		lines = append(lines, lcdformat.FillAround(16, "*", " NO CRGO DATA "))
 		return
 	}
-	sys := sysinfo.S
-	if sys.ID64 == 0 {
-		page.Add("No EDSM data")
+
+	if len(currentCargo.Inventory) == 0 {
+		// If cargo inventory is empty, show "Cargo Hold Empty"
+		lines = append(lines, lcdformat.FillAround(16, "*", " NO CARGO "))
+		return
+	}
+	sort.Slice(currentCargo.Inventory, func(i, j int) bool {
+		a := currentCargo.Inventory[i]
+		b := currentCargo.Inventory[j]
+		return a.displayname() < b.displayname()
+	})
+
+	for _, line := range currentCargo.Inventory {
+		lines = append(lines, lcdformat.SpaceBetween(16, line.displayname(), printer.Sprintf("%d", line.Count)))
+	}
+	// Add all pages in slice to the MFD
+	for _, line := range lines {
+		page.Add(line)
+	}
+}
+
+// Page assembly functions for MFD
+func ApplySystemPage(page *mfd.Page, header, systemname string, systemaddress int64, state *Journalstate) {
+	// Initialize a slice to hold lines for the page
+	lines := []string{}
+	// Fetch system body information
+	sys, err := GetEDSMBodies(systemaddress)
+	if err != nil {
+		log.Println("Error fetching EDSM data: ", err)
+		return
+	}
+
+	// Fetch system monetary values
+	values, err := GetEDSMSystemValue(systemaddress)
+	if err != nil {
+		log.Println("Error fetching EDSM system value: ", err)
 		return
 	}
 
 	mainBody := sys.MainStar()
-	if mainBody.IsScoopable {
-		page.Add("Scoopable")
+	// Separate the header (classification) and header display
+	newHeader := header
+	// Format the header based on the header title
+	if header == "NEXT JUMP" || header == "CUR SYSTEM" {
+		// Add FUEL indicator if star is scoopable
+		if mainBody.IsScoopable {
+
+			newHeader = lcdformat.SpaceBetween(16, header, "FUEL")
+			lines = append(lines, newHeader)
+		} else {
+			lines = append(lines, header)
+		}
+
 	} else {
-		page.Add("Not scoopable")
+		lines = append(lines, header)
+	}
+	// Add the system name line to the page
+	lines = append(lines, systemname)
+
+	// Add the star class and remaining jumps
+	// page.Add("Star: %s", mainBody.SubType)
+	starTypeData := ParseStarTypeString(mainBody.SubType)
+	jumps := ""
+
+	if state != nil && header == "NEXT JUMP" {
+		jumps = fmt.Sprintf("J:%d", state.EDSMTarget.RemainingJumpsInRoute)
+	}
+	lines = append(lines, lcdformat.SpaceBetween(16, fmt.Sprintf("CLS:%s", starTypeData.Class), jumps))
+	// Add the main star information
+	lines = append(lines, starTypeData.Desc)
+	// Add system body count and estimated values
+
+	lines = append(lines, lcdformat.SpaceBetween(16, "Bodies:", printer.Sprintf("%d", sys.BodyCount)))
+	lines = append(lines, lcdformat.SpaceBetween(16, "Scan:", printer.Sprintf("%dcr", values.EstimatedValue)))
+	lines = append(lines, lcdformat.SpaceBetween(16, "Map:", printer.Sprintf("%dcr", values.EstimatedValueMapped)))
+
+	// Print valuable bodies if available
+	if len(values.ValuableBodies) > 0 {
+		lines = append(lines, lcdformat.FillAround(16, "*", " VAL BODIES "))
+		for _, valbody := range values.ValuableBodies {
+			bodyName := valbody.ShortName(*sys)
+			crValue := printer.Sprintf("%dcr", valbody.ValueMax)
+			// append the body name and value to the lines
+			lines = append(lines, lcdformat.SpaceBetween(16, bodyName, crValue))
+		}
 	}
 
-	page.Add(mainBody.SubType)
-
-	addIntRight(page, "Bodies", sys.BodyCount)
-
-	valinfo := <-valueinfopromise
-	if valinfo.Error == nil {
-		addValueRight(page, "Scan", valinfo.S.EstimatedValue)
-		addValueRight(page, "Map", valinfo.S.EstimatedValueMapped)
-
-		if len(valinfo.S.ValuableBodies) > 0 {
-			page.Add("Valuable Bodies:")
-		}
-		for _, valbody := range valinfo.S.ValuableBodies {
-			bname := valbody.ShortName(sys)
-			valstr := printer.Sprintf("%dcr", valbody.ValueMax)
-			pad := 1
-			if len(bname)+len(valstr) < 16 {
-				pad = 16 - (len(bname) + len(valstr))
-			}
-			padstr := strings.Repeat(" ", pad)
-			page.Add("%s%s%s", bname, padstr, valstr)
-		}
-	}
-
+	// Evaluate presence of landable bodies and materials
 	landables := []edsm.Body{}
 	matLocations := map[string][]edsm.Body{}
-
-	for _, b := range sys.Bodies {
-		if b.IsLandable {
-			landables = append(landables, b)
-			for m := range b.Materials {
-				mlist, ok := matLocations[m]
+	// Iterate through bodies to find landable bodies and their materials
+	for _, body := range sys.Bodies {
+		if body.IsLandable {
+			landables = append(landables, body)
+			for material := range body.Materials {
+				bodiesWithMat, ok := matLocations[material]
 				if !ok {
-					mlist = []edsm.Body{}
-					matLocations[m] = mlist
+					bodiesWithMat = []edsm.Body{}
+					matLocations[material] = bodiesWithMat
 				}
-				matLocations[m] = append(mlist, b)
+				matLocations[material] = append(bodiesWithMat, body)
 			}
 		}
 	}
 
-	if len(landables) == 0 {
-		return
-	}
+	// Add prospecting information if landable bodies are present
+	// if len(landables) > 0 {
+	// 	lines = append(lines, lcdformat.FillAround(16, "*", " PROSPECT "))
+	// 	materialList := []string{}
 
-	page.Add("Prospecting:")
-	matlist := []string{}
-	for mat := range matLocations {
-		matlist = append(matlist, mat)
-		bodies := matLocations[mat]
-		sort.Slice(bodies, func(i, j int) bool { return bodies[i].Materials[mat] > bodies[j].Materials[mat] })
-	}
+	// 	for mat := range matLocations {
+	// 		materialList = append(materialList, mat)
+	// 		bodies := matLocations[mat]
+	// 		sort.Slice(bodies, func(i, j int) bool { return bodies[i].Materials[mat] > bodies[j].Materials[mat] })
+	// 	}
 
-	sort.Slice(matlist, func(i, j int) bool {
-		matA := matlist[i]
-		matB := matlist[j]
-		a := matLocations[matA]
-		b := matLocations[matB]
-		if len(a) == len(b) {
-			return a[0].Materials[matA] > b[0].Materials[matB]
-		}
-		return len(a) > len(b)
+	// 	// Sort materials by the number of bodies and then by material percentage
+	// 	sort.Slice(materialList, func(i, j int) bool {
+	// 		matA := materialList[i]
+	// 		matB := materialList[j]
+	// 		a := matLocations[matA]
+	// 		b := matLocations[matB]
+	// 		if len(a) == len(b) {
+	// 			return a[0].Materials[matA] > b[0].Materials[matB]
+	// 		}
+	// 		return len(a) > len(b)
 
-	})
-	for _, mat := range matlist {
-		bodies := matLocations[mat]
-		page.Add("%s %d", mat, len(bodies))
-		b := bodies[0]
-		page.Add("%s: %.2f%%", b.ShortName(sys), b.Materials[mat])
+	// 	})
+	// 	// Add material information to the page
+	// 	for _, material := range materialList {
+	// 		bodiesWithMat := matLocations[material]
+	// 		lines = append(lines, fmt.Sprintf("%s %d", material, len(bodiesWithMat)))
+	// 		b := bodiesWithMat[0]
+	// 		// Add the body name (number usually) and material percentage
+	// 		// matLine := lcdformat.SpaceBetween(16, b.ShortName(*sys), fmt.Sprintf("%.2f%%", float64(b.Materials[material])))
+	// 		matLine := lcdformat.SpaceBetween(16, b.ShortName(*sys), fmt.Sprintf("%.2f%%%%", b.Materials[material]))
+	// 		lines = append(lines, matLine)
+	// 	}
+	// } else {
+	// 	return
+	// }
+
+	// Add all pages in slice to the MFD
+	for _, line := range lines {
+		page.Add(line)
 	}
 }
 
-func RenderEDSMBody(page *mfd.Page, header, bodyName string, systemaddress, bodyid int64) {
-	sysinfopromise := edsm.GetSystemBodies(systemaddress)
-	page.Add(header)
-	page.Add(bodyName)
-	sysinfo := <-sysinfopromise
-	if sysinfo.Error != nil {
-		log.Println("Unable to fetch system information: ", sysinfo.Error)
-		page.Add("Sysinfo lookup error")
-		return
-	}
-	sys := sysinfo.S
-	if sys.ID64 == 0 {
-		page.Add("No EDSM data")
+func ApplyBodyPage(page *mfd.Page, header string, state *Journalstate) {
+	// page, "", state.Destination.Name, state.Location.SystemAddress, state.Destination.BodyID
+	lines := []string{}
+
+	sys, err := GetEDSMBodies(state.Location.SystemAddress)
+	if err != nil {
+		log.Println("Error fetching EDSM data: ", err)
+		lines = append(lines, lcdformat.FillAround(16, "*", " EDSM ERROR "))
 		return
 	}
 
-	body := sys.BodyByID(bodyid)
+	body := sys.BodyByID(state.Destination.BodyID)
 	if body.BodyID == 0 {
-		page.Add("No EDSM data")
+		lines = append(lines, lcdformat.FillAround(16, "*", " NO BODY DATA "))
 		return
 	}
+	lines = append(lines, lcdformat.SpaceBetween(16, header, fmt.Sprintf("%.2fG", body.Gravity)))
+	lines = append(lines, state.Destination.Name)
+	lines = append(lines, body.SubType)
 
-	page.Add("Gravity %7.2fG", body.Gravity)
-
-	page.Add("Materials:")
+	// add the planet materials
+	lines = append(lines, lcdformat.FillAround(16, "*", " MATERIAL "))
 	for _, m := range body.MaterialsSorted() {
-		page.Add("%5.2f%% %s", m.Percentage, m.Name)
+		lines = append(lines, lcdformat.SpaceBetween(16, fmt.Sprintf("%5.2f%%%%", m.Percentage), m.Name))
+	}
+	// Add all pages in slice to the MFD
+	for _, line := range lines {
+		page.Add(line)
+	}
+}
+
+type StarTypeData struct {
+	Class string
+	Desc  string
+}
+
+func ParseStarTypeString(starType string) StarTypeData {
+	// Parse the star type string and return a formatted version
+	// Example input: K (Yellow-Orange) Star
+	splitST := strings.Split(starType, " ")
+	class := splitST[0]
+	description := strings.ReplaceAll(splitST[1], "(", "")
+	description = strings.ReplaceAll(description, ")", "")
+	description = fmt.Sprintf("%s %s", description, "Star")
+	return StarTypeData{
+		Class: class,
+		Desc:  description,
 	}
 }
