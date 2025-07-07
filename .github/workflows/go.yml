@@ -4,76 +4,76 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., 0.1.2)'
+        description: "Release version (e.g., 0.1.2)"
         required: true
-        default: 'X.X.X'
+        default: "X.X.X"
 
 jobs:
   build-and-release:
     runs-on: windows-latest
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
-      with:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24.4'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24.4"
 
-    - name: Clean Previous Build
-      run: |
-        go clean
-        Remove-Item .\EDx52Display -Force -Recurse -ErrorAction SilentlyContinue
-        Remove-Item .\Release*.zip -ErrorAction SilentlyContinue
+      - name: Clean Previous Build
+        run: |
+          go clean
+          Remove-Item .\EDx52Display -Force -Recurse -ErrorAction SilentlyContinue
+          Remove-Item .\Release*.zip -ErrorAction SilentlyContinue
 
-    - name: Build Project
-      run: go build -ldflags "-H=windowsgui -s -w" -v -o EDx52display.exe
+      - name: Build Project
+        run: go build -ldflags "-H=windowsgui -s -w" -v -o EDx52display.exe
 
-    - name: Install UPX
-      run: choco install upx -y
+      - name: Install UPX
+        run: choco install upx -y
 
-    - name: UPX Compress Executable
-      run: upx --best --lzma EDx52display.exe
+      - name: UPX Compress Executable
+        run: upx --best --lzma EDx52display.exe
 
-    - name: Prepare Release Directory
-      run: |
-        mkdir EDx52Display
-        Copy-Item -Path EDx52display.exe,conf.yaml,LICENSE,README.md,names,bin -Destination .\EDx52Display -Recurse
+      - name: Prepare Release Directory
+        run: |
+          mkdir EDx52Display
+          Copy-Item -Path EDx52display.exe,conf.yaml,LICENSE,README.md,names,bin -Destination .\EDx52Display -Recurse
 
-    - name: Create Release Zip
-      run: powershell Compress-Archive -Path .\EDx52Display -DestinationPath .\EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
+      - name: Create Release Zip
+        run: powershell Compress-Archive -Path .\EDx52Display -DestinationPath .\EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
 
-    - name: Set up Git user
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-    
-    - name: Create signed tag using Actions OIDC
-      run: |
-        git tag v${{ github.event.inputs.version }}
-        git push origin v${{ github.event.inputs.version }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-    - name: Create GitHub Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ github.event.inputs.version }}
-        release_name: "EDx52display v${{ github.event.inputs.version }}"
-        draft: false
-        prerelease: false
+      - name: Set up Git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
-        asset_name: EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
-        asset_content_type: application/zip
+      - name: Create signed tag using Actions OIDC
+        run: |
+          git tag v${{ github.event.inputs.version }}
+          git push origin v${{ github.event.inputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          release_name: "EDx52display v${{ github.event.inputs.version }}"
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
+          asset_name: EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
+          asset_content_type: application/zip
