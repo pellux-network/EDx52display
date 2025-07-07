@@ -43,6 +43,18 @@ jobs:
     - name: Create Release Zip
       run: powershell Compress-Archive -Path .\EDx52Display -DestinationPath .\EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
 
+    - name: Set up Git user
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+    
+    - name: Create signed tag using Actions OIDC
+      run: |
+        git tag v${{ github.event.inputs.version }}
+        git push origin v${{ github.event.inputs.version }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
     - name: Create GitHub Release
       id: create_release
       uses: actions/create-release@v1
