@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	lcdformat "github.com/pbxx/goLCDFormat"
 	"github.com/pellux-network/EDx52display/edsm"
-	"github.com/pellux-network/EDx52display/lcdformat"
 	"github.com/pellux-network/EDx52display/mfd"
 )
 
@@ -97,7 +97,7 @@ func ApplySystemPage(page *mfd.Page, header, systemname string, systemaddress in
 	if header == "NEXT JUMP" || header == "CUR SYSTEM" {
 		// Add FUEL indicator if star is scoopable
 		if mainBody.IsScoopable {
-			newHeader = lcdformat.SpaceBetween([]string{header, "FUEL"}, 16)
+			newHeader = lcdformat.SpaceBetween(16, header, "FUEL")
 			page.Add(newHeader)
 		} else {
 			page.Add(header)
@@ -111,22 +111,19 @@ func ApplySystemPage(page *mfd.Page, header, systemname string, systemaddress in
 
 	// Add the star class and remaining jumps
 	// page.Add("Star: %s", mainBody.SubType)
-	starTypeData := lcdformat.ParseStarTypeString(mainBody.SubType)
+	starTypeData := ParseStarTypeString(mainBody.SubType)
 	jumps := ""
 
 	if state != nil && header == "NEXT JUMP" {
 		jumps = fmt.Sprintf("J:%d", state.EDSMTarget.RemainingJumpsInRoute)
 	}
-	page.Add(lcdformat.SpaceBetween([]string{
-		fmt.Sprintf("CLS:%s", starTypeData.Class),
-		jumps,
-	}, 16))
+	page.Add(lcdformat.SpaceBetween(16, fmt.Sprintf("CLS:%s", starTypeData.Class), jumps))
 	// Add the main star information
 	page.Add(starTypeData.Desc)
 	// Add system body count and estimated values
-	page.Add(lcdformat.SpaceBetween([]string{"Bodies:", printer.Sprintf("%d", sys.BodyCount)}, 16))
-	page.Add(lcdformat.SpaceBetween([]string{"Scan:", printer.Sprintf("%dcr", values.EstimatedValue)}, 16))
-	page.Add(lcdformat.SpaceBetween([]string{"Map:", printer.Sprintf("%dcr", values.EstimatedValueMapped)}, 16))
+	page.Add(lcdformat.SpaceBetween(16, "Bodies:", printer.Sprintf("%d", sys.BodyCount)))
+	page.Add(lcdformat.SpaceBetween(16, "Scan:", printer.Sprintf("%dcr", values.EstimatedValue)))
+	page.Add(lcdformat.SpaceBetween(16, "Map:", printer.Sprintf("%dcr", values.EstimatedValueMapped)))
 
 	// Print valuable bodies if available
 	if len(values.ValuableBodies) > 0 {
@@ -221,5 +218,24 @@ func ApplyBodyPage(page *mfd.Page, header, bodyName string, systemaddress, bodyi
 	page.Add("Materials:")
 	for _, m := range body.MaterialsSorted() {
 		page.Add("%5.2f%% %s", m.Percentage, m.Name)
+	}
+}
+
+type StarTypeData struct {
+	Class string
+	Desc  string
+}
+
+func ParseStarTypeString(starType string) StarTypeData {
+	// Parse the star type string and return a formatted version
+	// Example input: K (Yellow-Orange) Star
+	splitST := strings.Split(starType, " ")
+	class := splitST[0]
+	description := strings.ReplaceAll(splitST[1], "(", "")
+	description = strings.ReplaceAll(description, ")", "")
+	description = fmt.Sprintf("%s %s", description, "Star")
+	return StarTypeData{
+		Class: class,
+		Desc:  description,
 	}
 }
