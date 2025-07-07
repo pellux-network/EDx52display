@@ -9,24 +9,18 @@ on:
         default: "X.X.X"
 
 jobs:
-  build-and-release:
+  build:
     runs-on: windows-latest
+    outputs:
+      sha: ${{ steps.get_sha.outputs.sha }}
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: "1.24.4"
-
-      - name: Clean Previous Build
-        run: |
-          go clean
-          Remove-Item .\EDx52Display -Force -Recurse -ErrorAction SilentlyContinue
-          Remove-Item .\Release*.zip -ErrorAction SilentlyContinue
 
       - name: Build Project
         run: go build -ldflags "-H=windowsgui -s -w" -v -o EDx52display.exe
@@ -45,21 +39,43 @@ jobs:
       - name: Create Release Zip
         run: powershell Compress-Archive -Path .\EDx52Display -DestinationPath .\EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
 
-      - name: Set up Git user
+      - name: Upload artifact for release
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-zip
+          path: ./EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
+
+      - name: Get current commit SHA
+        id: get_sha
+        run: echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
+  tag-and-release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch full history (for tags)
+        run: git fetch --prune --unshallow
+
+      - name: Set up git user
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Set up GitHub credentials for push
+      - name: Create and push annotated tag
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-
-      - name: Create signed tag using Actions OIDC
-        run: |
-          git tag -a v${{ github.event.inputs.version }} -m "Release v${{ github.event.inputs.version }}"
+          git tag -a v${{ github.event.inputs.version }} ${{ needs.build.outputs.sha }} -m "Release v${{ github.event.inputs.version }}"
           git push origin v${{ github.event.inputs.version }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download artifact from build
+        uses: actions/download-artifact@v4
+        with:
+          name: release-zip
 
       - name: Create GitHub Release
         id: create_release
