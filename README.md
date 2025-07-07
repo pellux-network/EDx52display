@@ -4,8 +4,8 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/license/pellux-network/edx52display" alt="GitHub License" />
-  <img src="https://img.shields.io/github/go-mod/go-version/pellux-network/edx52display?logo=go&logoSize=auto&label=%20&color=grey
-  " alt="GitHub go.mod Go version" />
+  <img src="https://img.shields.io/github/go-mod/go-version/pellux-network/edx52display?logo=go&logoSize=auto&label=%20&color=grey"
+  alt="GitHub go.mod Go version" />
   <img src="https://img.shields.io/github/actions/workflow/status/pellux-network/edx52display/go.yml" alt="GitHub Actions Workflow Status" />
   <img src="https://img.shields.io/github/issues/pellux-network/edx52display" alt="GitHub Issues" />
   <img src="https://img.shields.io/github/issues-pr/pellux-network/edx52display" alt="GitHub Pull Requests" />
