@@ -29,7 +29,7 @@ If your journal file location is different than the default or you wish to disab
 
 ## [Wiki](https://github.com/pellux-network/EDx52display/wiki)
 
-For additional information or help with any encountered issues, visit the [Wiki](https://github.com/pellux-network/EDx52display/wiki).
+For additional information or help with any encountered issues, visit the [Wiki](https://github.com/pellux-network/EDx52display/wiki). This includes info on getting the correct drivers for the X52
 
 ## Credits
 
