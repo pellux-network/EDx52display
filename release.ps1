@@ -1,4 +1,4 @@
-$version = "0.1.2"
+$version = Read-Host "Enter the release version"
 
 go clean
 
@@ -20,4 +20,4 @@ if (Test-Path .\upx\upx.exe) {
 
 Copy-Item -Path EDx52display.exe,conf.yaml,LICENSE,README.md,names,bin -Destination .\EDx52Display -Recurse
 
-7z.exe a Release-$version.zip .\EDx52Display
+7z.exe a EDx52display-$version-portable-amd64.zip .\EDx52Display

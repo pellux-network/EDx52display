@@ -60,6 +60,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./Release-${{ github.event.inputs.version }}.zip
-        asset_name: Release-${{ github.event.inputs.version }}.zip
+        asset_path: ./EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
+        asset_name: EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
         asset_content_type: application/zip
