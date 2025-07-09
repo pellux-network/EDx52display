@@ -1,6 +1,6 @@
 # Changelog
 
-## [v0.2.0] - XX-XX-XXXX [PLANNED RELEASE]
+## [v0.2.0] - 07-07-2025
 
 ### Added
 
@@ -27,6 +27,8 @@
 
 - Selecting a system from the left-side external panel results in either 0 or 16 jumps remaining being displayed. This is unfortunately a bug with ED's journaling where it's actually displaying those number as jumps remaining so this will require a fix on Frontier's end
 - Arrival screen sometimes displays a few seconds after startup
+- Splash screen gets stuck waiting for a destination
+- Switching between Local Target and Next Jump views sometimes requires a page scroll.
 
 ## [v0.1.3] - 06-29-2025
 
