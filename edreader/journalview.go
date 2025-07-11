@@ -79,12 +79,18 @@ func RenderCargoPage(page *mfd.Page, _ Journalstate) {
 	// If currentCargo is nil (never loaded), show "No cargo data"
 	if currentCargo.Inventory == nil {
 		lines = append(lines, lcdformat.FillAround(16, "*", " NO CRGO DATA "))
+		for _, line := range lines {
+			page.Add(line)
+		}
 		return
 	}
 
 	if len(currentCargo.Inventory) == 0 {
 		// If cargo inventory is empty, show "Cargo Hold Empty"
 		lines = append(lines, lcdformat.FillAround(16, "*", " NO CARGO "))
+		for _, line := range lines {
+			page.Add(line)
+		}
 		return
 	}
 	sort.Slice(currentCargo.Inventory, func(i, j int) bool {
