@@ -31,7 +31,7 @@ jobs:
           Copy-Item -Path EDx52display-v${{ github.event.inputs.version }}.exe,conf.yaml,LICENSE,README.md,names,bin -Destination .\EDx52Display-v${{ github.event.inputs.version }} -Recurse
 
       - name: Create Release Zip
-        run: powershell Compress-Archive -Path .\EDx52Display -DestinationPath .\EDx52display-v${{ github.event.inputs.version }}-portable-amd64.zip
+        run: powershell Compress-Archive -Path .\EDx52display-v${{ github.event.inputs.version }} -DestinationPath .\EDx52display-v${{ github.event.inputs.version }}-portable-amd64.zip
 
       - name: Upload artifact for release
         uses: actions/upload-artifact@v4
