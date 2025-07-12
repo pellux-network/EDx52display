@@ -5,6 +5,7 @@
 ### Changed
 
 - Casing of body types to capital case
+- Changed all `CUR` headers to `CURR`
 
 ## [v0.2.1] - 07-11-2025
 
