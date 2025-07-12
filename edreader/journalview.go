@@ -6,6 +6,9 @@ import (
 	"sort"
 	"strings"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	lcdformat "github.com/pbxx/goLCDFormat"
 	"github.com/pellux-network/EDx52display/edsm"
 	"github.com/pellux-network/EDx52display/mfd"
@@ -38,12 +41,13 @@ func GetEDSMSystemValue(systemaddress int64) (*edsm.System, error) {
 func RenderStationPage(page *mfd.Page, header string, st edsm.Station) {
 	// Map allegiance to abbreviation
 	abbr := map[string]string{
-		"Federation": "FED",
-		"Empire":     "EMP",
-		"Alliance":   "ALLI",
+		"Federation":  "FED",
+		"Empire":      "EMP",
+		"Alliance":    "ALLI",
 		"Independent": "IND",
 	}
-	alg := abbr[strings.Title(strings.ToLower(st.Allegiance))]
+	titleCaser := cases.Title(language.English)
+	alg := abbr[titleCaser.String(strings.ToLower(st.Allegiance))]
 	if alg == "" {
 		alg = st.Allegiance // fallback to raw if not mapped
 	}

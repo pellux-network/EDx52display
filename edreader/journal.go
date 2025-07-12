@@ -464,15 +464,3 @@ func checkSplashScreen() {
 		}
 	}
 }
-
-func getDisplayName(line []byte) string {
-	name, _ := jsonparser.GetString(line, "Name")
-	if name != "" && !strings.HasPrefix(name, "$") {
-		return name
-	}
-	nameLoc, _ := jsonparser.GetString(line, "Name_Localised")
-	if nameLoc != "" {
-		return nameLoc
-	}
-	return name // fallback, even if it's a translation key
-}

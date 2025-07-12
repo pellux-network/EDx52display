@@ -3,11 +3,9 @@ package edreader
 import (
 	"encoding/csv"
 	"encoding/json"
-	"fmt"
 	"os"
 	"strings"
 
-	"github.com/pellux-network/EDx52display/mfd"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -48,15 +46,6 @@ var (
 func init() {
 	log.Debugln("Initializing cargo name map...")
 	initNameMap()
-}
-
-func addCargoRight(page *mfd.Page, label string, value int) {
-	valstr := fmt.Sprintf("%d", value)
-	pad := 16 - (len(label) + 1 + len(valstr))
-	if pad < 0 {
-		pad = 0
-	}
-	page.Add("%s:%s%s", label, strings.Repeat(" ", pad), valstr)
 }
 
 func handleCargoFile(file string) {
