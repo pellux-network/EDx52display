@@ -37,39 +37,74 @@ func GetEDSMSystemValue(systemaddress int64) (*edsm.System, error) {
 // Page rendering functions for MFD
 func RenderLocationPage(page *mfd.Page, state Journalstate) {
 	if state.Type == LocationPlanet || state.Type == LocationLanded {
-		ApplyBodyPage(page, "GRND SYS", &state)
+		ApplyBodyPage(page, "CUR BODY", state.Location.SystemAddress, state.Location.BodyID, state.Location.Body)
 	} else {
 		ApplySystemPage(page, "CUR SYSTEM", state.Location.StarSystem, state.Location.SystemAddress, &state)
 	}
 }
 
 func RenderDestinationPage(page *mfd.Page, state Journalstate) {
-	// Show splash screen if enabled
 	if state.ShowSplashScreen {
 		page.Add("################")
 		page.Add("EDx52display v0.2.0")
 		page.Add("################")
 		return
 	}
-	// Show arrival page if arrived at FSD target
 	if state.ArrivedAtFSDTarget {
 		page.Add("################")
 		page.Add("  You have arrived  ")
 		page.Add("################")
 		return
 	}
-	// Show local destination if set, else FSD target, else "No Destination"
+
+	// Local destination in current system
 	if state.Destination.SystemAddress != 0 &&
 		state.Destination.SystemAddress == state.Location.SystemAddress &&
 		state.Destination.BodyID != 0 {
 
-		ApplyBodyPage(page, "LOCAL TGT", &state)
-	} else if state.EDSMTarget.SystemAddress != 0 {
-		// header := fmt.Sprintf("FSD Target: %d", state.EDSMTarget.RemainingJumpsInRoute)
-		ApplySystemPage(page, "NEXT JUMP", state.EDSMTarget.Name, state.EDSMTarget.SystemAddress, &state)
-	} else {
-		page.Add(" No Destination ")
+		// Try to match station by name
+		stations, err := edsm.GetSystemStations(state.Location.SystemAddress)
+		if err == nil {
+			for _, st := range stations {
+				if strings.EqualFold(st.Name, state.Destination.Name) {
+					// Format: header with distance, name, allegiance
+					dist := fmt.Sprintf("%.2fly", st.DistanceToArrival/9460730472580800.0) // meters to ly
+					page.Add(lcdformat.SpaceBetween(16, "TGT PORT", dist))
+					page.Add(st.Name)
+					page.Add(st.Allegiance)
+					return
+				}
+			}
+		}
+
+		// Fallback to body logic
+		sys, err := GetEDSMBodies(state.Location.SystemAddress)
+		if err == nil {
+			body := sys.BodyByID(state.Destination.BodyID)
+			switch {
+			case body.IsLandable:
+				ApplyBodyPage(page, "TGT BODY", state.Location.SystemAddress, state.Destination.BodyID, state.Destination.Name)
+				return
+			default:
+				page.Add(lcdformat.SpaceBetween(16, "TGT BODY", state.Destination.Name))
+				if body.SubType != "" {
+					page.Add(body.SubType)
+				}
+				return
+			}
+		}
+		// Fallback if EDSM fails
+		page.Add(lcdformat.SpaceBetween(16, "TGT BODY", state.Destination.Name))
+		return
 	}
+
+	// FSD target (next jump)
+	if state.EDSMTarget.SystemAddress != 0 {
+		ApplySystemPage(page, "NEXT JUMP", state.EDSMTarget.Name, state.EDSMTarget.SystemAddress, &state)
+		return
+	}
+
+	page.Add(" No Destination ")
 }
 
 func RenderCargoPage(page *mfd.Page, _ Journalstate) {
@@ -235,24 +270,29 @@ func ApplySystemPage(page *mfd.Page, header, systemname string, systemaddress in
 	}
 }
 
-func ApplyBodyPage(page *mfd.Page, header string, state *Journalstate) {
-	// page, "", state.Destination.Name, state.Location.SystemAddress, state.Destination.BodyID
+func ApplyBodyPage(page *mfd.Page, header string, systemAddress int64, bodyID int64, bodyName string) {
 	lines := []string{}
 
-	sys, err := GetEDSMBodies(state.Location.SystemAddress)
+	sys, err := GetEDSMBodies(systemAddress)
 	if err != nil {
 		log.Println("Error fetching EDSM data: ", err)
 		lines = append(lines, lcdformat.FillAround(16, "*", " EDSM ERROR "))
+		for _, line := range lines {
+			page.Add(line)
+		}
 		return
 	}
 
-	body := sys.BodyByID(state.Destination.BodyID)
+	body := sys.BodyByID(bodyID)
 	if body.BodyID == 0 {
 		lines = append(lines, lcdformat.FillAround(16, "*", " NO BODY DATA "))
+		for _, line := range lines {
+			page.Add(line)
+		}
 		return
 	}
 	lines = append(lines, lcdformat.SpaceBetween(16, header, fmt.Sprintf("%.2fG", body.Gravity)))
-	lines = append(lines, state.Destination.Name)
+	lines = append(lines, bodyName)
 	lines = append(lines, body.SubType)
 
 	// add the planet materials
@@ -260,7 +300,6 @@ func ApplyBodyPage(page *mfd.Page, header string, state *Journalstate) {
 	for _, m := range body.MaterialsSorted() {
 		lines = append(lines, lcdformat.SpaceBetween(16, fmt.Sprintf("%5.2f%%%%", m.Percentage), m.Name))
 	}
-	// Add all pages in slice to the MFD
 	for _, line := range lines {
 		page.Add(line)
 	}

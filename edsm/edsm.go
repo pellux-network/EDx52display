@@ -71,6 +71,22 @@ type SystemResult struct {
 	Error error
 }
 
+// Station represents a station in the system
+type Station struct {
+	ID                int64   `json:"id"`
+	Name              string  `json:"name"`
+	Type              string  `json:"type"`
+	DistanceToArrival float64 `json:"distanceToArrival"`
+	Allegiance        string  `json:"allegiance"`
+}
+
+// StationsResponse represents the response for stations in a system
+type StationsResponse struct {
+	ID       int64     `json:"id"`
+	Name     string    `json:"name"`
+	Stations []Station `json:"stations"`
+}
+
 // MainStar returns the main star in the system
 func (s System) MainStar() Body {
 	for _, body := range s.Bodies {
@@ -145,6 +161,11 @@ func GetSystemValue(id64 int64) <-chan SystemResult {
 var sysinfocache = make(map[string]System)
 var cachelock = sync.RWMutex{}
 
+var stationCache = struct {
+	sync.RWMutex
+	data map[int64][]Station
+}{data: make(map[int64][]Station)}
+
 func getBodyInfo(url string, id64 int64) <-chan SystemResult {
 	log.Traceln("getBodyInfo", url, id64)
 	retchan := make(chan SystemResult)
@@ -182,4 +203,29 @@ func getBodyInfo(url string, id64 int64) <-chan SystemResult {
 		retchan <- SystemResult{s, nil}
 	}()
 	return retchan
+}
+
+// GetSystemStations retrieves station information from EDSM.net
+func GetSystemStations(systemaddress int64) ([]Station, error) {
+	stationCache.RLock()
+	if stations, ok := stationCache.data[systemaddress]; ok {
+		stationCache.RUnlock()
+		return stations, nil
+	}
+	stationCache.RUnlock()
+
+	url := fmt.Sprintf("https://www.edsm.net/api-system-v1/stations?systemId64=%d", systemaddress)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var sr StationsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&sr); err != nil {
+		return nil, err
+	}
+	stationCache.Lock()
+	stationCache.data[systemaddress] = sr.Stations
+	stationCache.Unlock()
+	return sr.Stations, nil
 }

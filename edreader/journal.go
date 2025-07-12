@@ -130,6 +130,7 @@ var (
 	lastJournalState    Journalstate
 	lastStatusFileSize  int64  // NEW: for status file change detection
 	firstEnabledPageKey string // NEW: track first enabled page
+	lastSystemAddress   int64  // NEW: track last system address for prefetching
 )
 
 func init() {
@@ -287,6 +288,13 @@ func ParseJournalLine(line []byte, state *Journalstate) {
 		eApproachSettlement(p, state)
 	case "Loadout":
 		eLoadout(p) // NEW: handle Loadout event
+	case "NavRouteClear":
+		// NEW: handle NavRouteClear event
+		state.EDSMTarget = EDSMTarget{}
+		state.LastFSDTargetSystem = ""
+		state.LastFSDTargetAddress = 0
+		state.ArrivedAtFSDTarget = false
+		state.ArrivedAtFSDTargetTime = time.Time{}
 	}
 }
 
@@ -295,6 +303,12 @@ func eLocation(p parser, state *Journalstate) {
 	state.Type = LocationSystem
 	state.Location.SystemAddress, _ = p.getInt(systemaddress)
 	state.StarSystem, _ = p.getString(starsystem)
+
+	// Prefetch stations if system changed
+	if state.Location.SystemAddress != lastSystemAddress && state.Location.SystemAddress != 0 {
+		PrefetchStations(state.Location.SystemAddress)
+		lastSystemAddress = state.Location.SystemAddress
+	}
 
 	bodyType, ok := p.getString(bodytype)
 

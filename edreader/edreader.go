@@ -11,6 +11,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pellux-network/EDx52display/conf"
+	"github.com/pellux-network/EDx52display/edsm"
 	"github.com/pellux-network/EDx52display/mfd"
 )
 
@@ -80,6 +81,11 @@ func Start(cfg conf.Conf) {
 	err = watcher.Add(journalfolder)
 	if err != nil {
 		log.Panicf("Failed to add watcher: %v", err)
+	}
+
+	// Prefetch stations for the initial system (if known)
+	if lastJournalState.Location.SystemAddress != 0 {
+		PrefetchStations(lastJournalState.Location.SystemAddress)
 	}
 
 	go func() {
@@ -164,4 +170,11 @@ func swapMfd() {
 		mfd.Write(Mfd)
 		PrevMfd = Mfd.Copy()
 	}
+}
+
+// Prefetches station info for a system and caches it
+func PrefetchStations(systemAddress int64) {
+	go func() {
+		_, _ = edsm.GetSystemStations(systemAddress)
+	}()
 }
