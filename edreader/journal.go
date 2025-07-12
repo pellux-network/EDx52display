@@ -287,14 +287,15 @@ func ParseJournalLine(line []byte, state *Journalstate) {
 	case "ApproachSettlement":
 		eApproachSettlement(p, state)
 	case "Loadout":
-		eLoadout(p) // NEW: handle Loadout event
+		eLoadout(p)
 	case "NavRouteClear":
-		// NEW: handle NavRouteClear event
 		state.EDSMTarget = EDSMTarget{}
 		state.LastFSDTargetSystem = ""
 		state.LastFSDTargetAddress = 0
 		state.ArrivedAtFSDTarget = false
 		state.ArrivedAtFSDTargetTime = time.Time{}
+	case "Docked":
+		eDocked(p, state)
 	}
 }
 
@@ -412,6 +413,19 @@ func eLoadout(p parser) {
 	}
 }
 
+func eDocked(p parser, state *Journalstate) {
+	stationName, _ := p.getString("StationName")
+	systemAddress, _ := p.getInt("SystemAddress")
+	systemName, _ := p.getString("StarSystem")
+
+	state.Type = LocationDocked
+	state.Location.Body = stationName
+	state.Location.BodyID = 0
+	state.Location.SystemAddress = systemAddress
+	state.Location.StarSystem = systemName
+	state.BodyType = "Station"
+}
+
 func checkArrival() {
 	// Only clear arrival state if a new target is set, or N seconds have passed
 	const arrivalTimeout = 10 * time.Second // <-- Change this value as desired
@@ -435,7 +449,8 @@ func checkSplashScreen() {
 		switch firstEnabledPageKey {
 		case "destination":
 			firstPageReady = lastJournalState.Destination.SystemAddress != 0 ||
-				lastJournalState.EDSMTarget.SystemAddress != 0
+				lastJournalState.EDSMTarget.SystemAddress != 0 ||
+				(lastJournalState.Type == LocationDocked && lastJournalState.Location.Body != "")
 		case "location":
 			firstPageReady = lastJournalState.Location.SystemAddress != 0
 		case "cargo":

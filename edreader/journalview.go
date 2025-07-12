@@ -34,8 +34,29 @@ func GetEDSMSystemValue(systemaddress int64) (*edsm.System, error) {
 	return &valinfo.S, nil
 }
 
+// Helper to render a station page
+func RenderStationPage(page *mfd.Page, header string, st edsm.Station) {
+	dist := fmt.Sprintf("%.2fly", st.DistanceToArrival/9460730472580800.0) // meters to ly
+	page.Add(lcdformat.SpaceBetween(16, header, dist))
+	page.Add(st.Name)
+	page.Add(st.Allegiance)
+}
+
 // Page rendering functions for MFD
 func RenderLocationPage(page *mfd.Page, state Journalstate) {
+	// If docked, try to match current body as a station
+	if state.Type == LocationDocked && state.Location.Body != "" {
+		stations, err := edsm.GetSystemStations(state.Location.SystemAddress)
+		if err == nil {
+			for _, st := range stations {
+				if strings.EqualFold(st.Name, state.Location.Body) {
+					RenderStationPage(page, "CUR PORT", st)
+					return
+				}
+			}
+		}
+		// fallback: show as body if not found as station
+	}
 	if state.Type == LocationPlanet || state.Type == LocationLanded {
 		ApplyBodyPage(page, "CUR BODY", state.Location.SystemAddress, state.Location.BodyID, state.Location.Body)
 	} else {
@@ -60,40 +81,38 @@ func RenderDestinationPage(page *mfd.Page, state Journalstate) {
 	// Local destination in current system
 	if state.Destination.SystemAddress != 0 &&
 		state.Destination.SystemAddress == state.Location.SystemAddress &&
-		state.Destination.BodyID != 0 {
+		state.Destination.Name != "" {
 
 		// Try to match station by name
 		stations, err := edsm.GetSystemStations(state.Location.SystemAddress)
 		if err == nil {
 			for _, st := range stations {
 				if strings.EqualFold(st.Name, state.Destination.Name) {
-					// Format: header with distance, name, allegiance
-					dist := fmt.Sprintf("%.2fly", st.DistanceToArrival/9460730472580800.0) // meters to ly
-					page.Add(lcdformat.SpaceBetween(16, "TGT PORT", dist))
-					page.Add(st.Name)
-					page.Add(st.Allegiance)
+					RenderStationPage(page, "TGT PORT", st)
 					return
 				}
 			}
 		}
 
-		// Fallback to body logic
-		sys, err := GetEDSMBodies(state.Location.SystemAddress)
-		if err == nil {
-			body := sys.BodyByID(state.Destination.BodyID)
-			switch {
-			case body.IsLandable:
-				ApplyBodyPage(page, "TGT BODY", state.Location.SystemAddress, state.Destination.BodyID, state.Destination.Name)
-				return
-			default:
-				page.Add(lcdformat.SpaceBetween(16, "TGT BODY", state.Destination.Name))
-				if body.SubType != "" {
-					page.Add(body.SubType)
+		// Fallback to body logic if BodyID is set
+		if state.Destination.BodyID != 0 {
+			sys, err := GetEDSMBodies(state.Location.SystemAddress)
+			if err == nil {
+				body := sys.BodyByID(state.Destination.BodyID)
+				switch {
+				case body.IsLandable:
+					ApplyBodyPage(page, "TGT BODY", state.Location.SystemAddress, state.Destination.BodyID, state.Destination.Name)
+					return
+				default:
+					page.Add(lcdformat.SpaceBetween(16, "TGT BODY", state.Destination.Name))
+					if body.SubType != "" {
+						page.Add(body.SubType)
+					}
+					return
 				}
-				return
 			}
 		}
-		// Fallback if EDSM fails
+		// Fallback if EDSM fails or no BodyID
 		page.Add(lcdformat.SpaceBetween(16, "TGT BODY", state.Destination.Name))
 		return
 	}
