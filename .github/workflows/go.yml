@@ -27,7 +27,7 @@ jobs:
 
       - name: Prepare Release Directory
         run: |
-          mkdir EDx52Display
+          mkdir EDx52Display-v${{ github.event.inputs.version }}
           Copy-Item -Path EDx52display-v${{ github.event.inputs.version }}.exe,conf.yaml,LICENSE,README.md,names,bin -Destination .\EDx52Display-v${{ github.event.inputs.version }} -Recurse
 
       - name: Create Release Zip
