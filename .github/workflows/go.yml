@@ -47,51 +47,27 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up git user
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Create and push tag using GitHub CLI
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh auth setup-git
-          gh release delete v${{ github.event.inputs.version }} --yes || true
-          git tag -d v${{ github.event.inputs.version }} || true
-          git tag -a v${{ github.event.inputs.version }} ${{ needs.build.outputs.sha }} -m "Release v${{ github.event.inputs.version }}"
-          git push origin :refs/tags/v${{ github.event.inputs.version }} || true
-          git push origin v${{ github.event.inputs.version }}
-          git fetch --tags
 
       - name: Download artifact from build
         uses: actions/download-artifact@v4
         with:
           name: release-zip
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
         with:
-          tag_name: v${{ github.event.inputs.version }}
-          release_name: "EDx52display v${{ github.event.inputs.version }}"
-          draft: false
-          prerelease: false
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          custom_tag: v${{ github.event.inputs.version }}
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create a GitHub release
+        uses: ncipollo/release-action@v1
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./EDx52display-v${{ github.event.inputs.version }}-portable-amd64.zip
-          asset_name: EDx52display-v${{ github.event.inputs.version }}-portable-amd64.zip
-          asset_content_type: application/zip
+          tag: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
+          artifacts: ./EDx52display-v${{ github.event.inputs.version }}-portable-amd64.zip
