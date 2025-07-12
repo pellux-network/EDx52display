@@ -7,6 +7,7 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/getlantern/systray v1.2.2
 	github.com/google/go-cmp v0.7.0
+	github.com/pbxx/goLCDFormat v1.0.2
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/sys v0.33.0
 	golang.org/x/text v0.26.0
@@ -25,7 +26,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c // indirect
-	github.com/pbxx/goLCDFormat v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect
