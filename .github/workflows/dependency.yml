@@ -1,8 +1,6 @@
 name: Go Dependency Submission
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 # The API requires write permission on the repository to submit dependencies
 permissions:
