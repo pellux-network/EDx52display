@@ -25,6 +25,8 @@ type TextLogFormatter struct{}
 //go:embed icon.ico
 var iconData []byte
 
+const AppVersion = "v0.2.0"
+
 func (f *TextLogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
 	level := entry.Level.String()
@@ -44,6 +46,9 @@ func onReady() {
 	systray.SetTooltip("EDx52Display is running")
 
 	mQuit := systray.AddMenuItem("Quit", "Quit the application")
+
+	// Check for updates at startup (non-blocking)
+	go CheckForUpdate(AppVersion)
 
 	// Start your main logic in a goroutine
 	go func() {
