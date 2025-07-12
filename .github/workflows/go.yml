@@ -58,12 +58,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Create and push annotated tag
+      - name: Create and push tag using GitHub CLI
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git tag -a v${{ github.event.inputs.version }} ${{ needs.build.outputs.sha }} -m "Release v${{ github.event.inputs.version }}"
-          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} v${{ github.event.inputs.version }}
+          gh auth setup-git
+          gh release delete v${{ github.event.inputs.version }} --yes || true
+          gh tag delete v${{ github.event.inputs.version }} --yes || true
+          gh tag create v${{ github.event.inputs.version }} ${{ needs.build.outputs.sha }} --notes "Release v${{ github.event.inputs.version }}"
+          git fetch --tags
 
       - name: Download artifact from build
         uses: actions/download-artifact@v4
