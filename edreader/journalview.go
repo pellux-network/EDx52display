@@ -378,7 +378,7 @@ func ApplyBodyPage(page *mfd.Page, header string, systemAddress int64, bodyID in
 	}
 	lines = append(lines, lcdformat.SpaceBetween(16, header, fmt.Sprintf("%.2fG", body.Gravity)))
 	lines = append(lines, bodyName)
-	lines = append(lines, body.SubType)
+	lines = append(lines, cases.Title(language.English).String(body.SubType))
 
 	// add the planet materials
 	lines = append(lines, lcdformat.FillAround(16, "*", " MATERIAL "))
