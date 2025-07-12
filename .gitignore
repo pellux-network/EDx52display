@@ -30,6 +30,7 @@ $RECYCLE.BIN/
 mfd.json
 
 EDx52Display/
+EDx52display*/
 debug
 logs/
 *.zip
