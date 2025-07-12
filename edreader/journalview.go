@@ -36,10 +36,20 @@ func GetEDSMSystemValue(systemaddress int64) (*edsm.System, error) {
 
 // Helper to render a station page
 func RenderStationPage(page *mfd.Page, header string, st edsm.Station) {
-	dist := fmt.Sprintf("%.2fly", st.DistanceToArrival/9460730472580800.0) // meters to ly
-	page.Add(lcdformat.SpaceBetween(16, header, dist))
+	// Map allegiance to abbreviation
+	abbr := map[string]string{
+		"Federation": "FED",
+		"Empire":     "EMP",
+		"Alliance":   "ALLI",
+		"Independent": "IND",
+	}
+	alg := abbr[strings.Title(strings.ToLower(st.Allegiance))]
+	if alg == "" {
+		alg = st.Allegiance // fallback to raw if not mapped
+	}
+	page.Add(lcdformat.SpaceBetween(16, header, alg))
 	page.Add(st.Name)
-	page.Add(st.Allegiance)
+	page.Add(st.Type)
 }
 
 // Page rendering functions for MFD
