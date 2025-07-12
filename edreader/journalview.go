@@ -56,11 +56,52 @@ func RenderStationPage(page *mfd.Page, header string, st edsm.Station) {
 	page.Add(st.Type)
 }
 
+// Helper to render a Fleet Carrier page
+func RenderFleetCarrierPage(page *mfd.Page, header, fcID, fcName string, systemAddress int64) {
+	// Try to get EDSM station info for type (always "Fleet Carrier" but future-proof)
+	stType := "Fleet Carrier"
+	stations, err := edsm.GetSystemStations(systemAddress)
+	if err == nil {
+		for _, st := range stations {
+			if strings.EqualFold(st.Name, fcID) {
+				stType = st.Type
+				break
+			}
+		}
+	}
+	page.Add(lcdformat.SpaceBetween(16, header, fcID))
+	page.Add(fcName)
+	page.Add(stType)
+}
+
 // Page rendering functions for MFD
 func RenderLocationPage(page *mfd.Page, state Journalstate) {
-	// If docked, try to match current body as a station
-	if state.Type == LocationDocked && state.Location.Body != "" {
+	// --- Fleet Carrier: CUR FC page ---
+	if state.Type == LocationDocked && state.Location.Body != "" && state.BodyType == "Station" {
+		// Try to detect if docked at FC
+		// state.Location.Body = StationName (FC ID), state.Location.SystemAddress
 		stations, err := edsm.GetSystemStations(state.Location.SystemAddress)
+		isFC := false
+		if err == nil {
+			for _, st := range stations {
+				if strings.EqualFold(st.Name, state.Location.Body) && st.Type == "Fleet Carrier" {
+					isFC = true
+					break
+				}
+			}
+		}
+		if isFC || strings.HasPrefix(state.Location.Body, "FC") || len(state.Location.Body) == 7 {
+			// Try to get last seen FC name from session
+			fcID := state.Location.Body
+			fcName := GetLastFleetCarrierName(fcID)
+			if fcName == "" {
+				fcName = "Unknown Fleet Carrier"
+			}
+			RenderFleetCarrierPage(page, "CUR FC", fcID, fcName, state.Location.SystemAddress)
+			return
+		}
+		// ...existing code for normal stations...
+		stations, err = edsm.GetSystemStations(state.Location.SystemAddress)
 		if err == nil {
 			for _, st := range stations {
 				if strings.EqualFold(st.Name, state.Location.Body) {
@@ -96,6 +137,17 @@ func RenderDestinationPage(page *mfd.Page, state Journalstate) {
 	if state.Destination.SystemAddress != 0 &&
 		state.Destination.SystemAddress == state.Location.SystemAddress &&
 		state.Destination.Name != "" {
+
+		// --- Fleet Carrier: TGT FC page ---
+		// Try to parse FC name/id from destination name
+		fcName, fcID := ExtractFleetCarrierNameID(state.Destination.Name)
+		if fcID != "" {
+			if fcName == "" {
+				fcName = "Unknown Fleet Carrier"
+			}
+			RenderFleetCarrierPage(page, "TGT FC", fcID, fcName, state.Destination.SystemAddress)
+			return
+		}
 
 		// Try to match station by name
 		stations, err := edsm.GetSystemStations(state.Location.SystemAddress)

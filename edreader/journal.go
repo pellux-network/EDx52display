@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -86,6 +87,13 @@ const (
 	name          = "Name"
 )
 
+// --- Fleet Carrier helpers ---
+
+var (
+	lastFCReceiveTextNameMu sync.Mutex
+	lastFCReceiveTextName   = map[string]string{} // map[fcID]fcName
+)
+
 type parser struct {
 	line []byte
 }
@@ -136,6 +144,46 @@ var (
 func init() {
 	lastJournalState.ShowSplashScreen = true
 	lastJournalState.SplashScreenStartTime = time.Now()
+}
+
+// ExtractFleetCarrierNameID splits a string like "Stormcrow VZY-8XQ" into ("Stormcrow", "VZY-8XQ").
+// Returns ("", "") if not a FC.
+func ExtractFleetCarrierNameID(full string) (string, string) {
+	parts := strings.Fields(full)
+	if len(parts) < 2 {
+		return "", ""
+	}
+	id := parts[len(parts)-1]
+	if matched, _ := regexp.MatchString(`^[A-Z0-9]{3}-[A-Z0-9]{3}$`, id); !matched {
+		return "", ""
+	}
+	name := strings.TrimSpace(strings.TrimSuffix(full, id))
+	name = strings.TrimSpace(name)
+	return name, id
+}
+
+// SaveFleetCarrierReceiveText remembers the last FC name for a given ID.
+func SaveFleetCarrierReceiveText(from string) {
+	parts := strings.Fields(from)
+	if len(parts) < 2 {
+		return
+	}
+	id := parts[len(parts)-1]
+	if matched, _ := regexp.MatchString(`^[A-Z0-9]{3}-[A-Z0-9]{3}$`, id); !matched {
+		return
+	}
+	name := strings.TrimSpace(strings.TrimSuffix(from, id))
+	name = strings.TrimSpace(name)
+	lastFCReceiveTextNameMu.Lock()
+	lastFCReceiveTextName[id] = name
+	lastFCReceiveTextNameMu.Unlock()
+}
+
+// GetLastFleetCarrierName returns the last seen FC name for a given ID, or "".
+func GetLastFleetCarrierName(id string) string {
+	lastFCReceiveTextNameMu.Lock()
+	defer lastFCReceiveTextNameMu.Unlock()
+	return lastFCReceiveTextName[id]
 }
 
 // Call this at startup after loading config, e.g. in main or Start()
@@ -243,6 +291,16 @@ func handleStatusFile(filename string) {
 				name = nameRaw
 			}
 		}
+		// --- Fleet Carrier: parse name/id if present ---
+		fcName, fcID := ExtractFleetCarrierNameID(name)
+		if fcID != "" {
+			// Store for session (for TGT FC page)
+			lastFCReceiveTextNameMu.Lock()
+			if _, ok := lastFCReceiveTextName[fcID]; !ok {
+				lastFCReceiveTextName[fcID] = fcName
+			}
+			lastFCReceiveTextNameMu.Unlock()
+		}
 		lastJournalState.Destination = Destination{
 			SystemAddress: sysID,
 			BodyID:        bodyID,
@@ -261,6 +319,7 @@ func handleStatusFile(filename string) {
 // ParseJournalLine parses a single line of the journal and returns the new state after parsing.
 func ParseJournalLine(line []byte, state *Journalstate) {
 	re := regexp.MustCompile(`"event":"(\w*)"`)
+
 	event := re.FindStringSubmatch(string(line))
 	if len(event) < 2 {
 		// Not a valid event line, skip
@@ -294,6 +353,8 @@ func ParseJournalLine(line []byte, state *Journalstate) {
 		state.LastFSDTargetAddress = 0
 		state.ArrivedAtFSDTarget = false
 		state.ArrivedAtFSDTargetTime = time.Time{}
+	case "ReceiveText":
+		eReceiveText(p)
 	case "Docked":
 		eDocked(p, state)
 	}
@@ -415,6 +476,7 @@ func eLoadout(p parser) {
 
 func eDocked(p parser, state *Journalstate) {
 	stationName, _ := p.getString("StationName")
+	stationType, _ := p.getString("StationType")
 	systemAddress, _ := p.getInt("SystemAddress")
 	systemName, _ := p.getString("StarSystem")
 
@@ -424,6 +486,23 @@ func eDocked(p parser, state *Journalstate) {
 	state.Location.SystemAddress = systemAddress
 	state.Location.StarSystem = systemName
 	state.BodyType = "Station"
+
+	// --- Fleet Carrier: store last FC name for this ID if docking at FC ---
+	if stationType == "FleetCarrier" {
+		// Try to get last seen FC name from ReceiveText, else leave as is
+		// (Display logic will handle fallback)
+	}
+}
+
+// --- Fleet Carrier: parse ReceiveText for FC name ---
+func eReceiveText(p parser) {
+	from, _ := p.getString("From")
+	message, _ := p.getString("Message")
+	channel, _ := p.getString("Channel")
+	if channel == "npc" && strings.HasSuffix(message, "docking_granted;") {
+		// Only store if looks like FC docking granted
+		SaveFleetCarrierReceiveText(from)
+	}
 }
 
 func checkArrival() {
