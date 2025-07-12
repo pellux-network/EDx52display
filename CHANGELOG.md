@@ -1,21 +1,19 @@
 # Changelog
 
-## [v0.2.2] - XX-XX-XXXX
-
-### Changed
-
-- Casing of body types to capital case
-- Changed all `CUR` headers to `CURR`
+## [v0.2.2] - XX-XX-XXXX [PLANNED RELEASE]
 
 ## [v0.2.1] - 07-11-2025
 
 ### Added
+
 - PORT pages for current and targeted star and ground ports
 - FLEET CARRIER pages for current and targeted FCs
 
 ### Changed
 
 - Several header names
+- Casing of body types to capital case
+- Changed all `CUR` headers to `CURR`
 
 ### Fixed
 
