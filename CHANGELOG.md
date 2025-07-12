@@ -1,5 +1,24 @@
 # Changelog
 
+## [v0.2.1] - XX-XX-XXXX [PLANNED RELEASE]
+
+### Added
+- PORT pages for current and targeted star and ground ports
+- FLEET CARRIER pages for current and targeted FCs
+
+### Changed
+
+- Several header names
+
+### Fixed
+
+- Cargo page blanking with empty cargo hold
+- Unreliable detection behavior for target and location type
+
+### Removed
+
+- UPX compression as Windows won't stop flagging it as malware.
+
 ## [v0.2.0] - 07-07-2025
 
 ### Added

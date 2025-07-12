@@ -23,27 +23,21 @@ jobs:
           go-version: "1.24.4"
 
       - name: Build Project
-        run: go build -ldflags "-H=windowsgui -s -w" -v -o EDx52display.exe
-
-      - name: Install UPX
-        run: choco install upx -y
-
-      - name: UPX Compress Executable
-        run: upx --best --lzma EDx52display.exe
+        run: go build -ldflags "-H=windowsgui -s -w" -v -o EDx52display-v${{ github.event.inputs.version }}.exe
 
       - name: Prepare Release Directory
         run: |
           mkdir EDx52Display
-          Copy-Item -Path EDx52display.exe,conf.yaml,LICENSE,README.md,names,bin -Destination .\EDx52Display -Recurse
+          Copy-Item -Path EDx52display-v${{ github.event.inputs.version }}.exe,conf.yaml,LICENSE,README.md,names,bin -Destination .\EDx52Display-v${{ github.event.inputs.version }} -Recurse
 
       - name: Create Release Zip
-        run: powershell Compress-Archive -Path .\EDx52Display -DestinationPath .\EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
+        run: powershell Compress-Archive -Path .\EDx52Display -DestinationPath .\EDx52display-v${{ github.event.inputs.version }}-portable-amd64.zip
 
       - name: Upload artifact for release
         uses: actions/upload-artifact@v4
         with:
           name: release-zip
-          path: ./EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
+          path: ./EDx52display-v${{ github.event.inputs.version }}-portable-amd64.zip
 
       - name: Get current commit SHA
         id: get_sha
@@ -91,6 +85,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
-          asset_name: EDx52display-${{ github.event.inputs.version }}-portable-amd64.zip
+          asset_path: ./EDx52display-v${{ github.event.inputs.version }}-portable-amd64.zip
+          asset_name: EDx52display-v${{ github.event.inputs.version }}-portable-amd64.zip
           asset_content_type: application/zip
