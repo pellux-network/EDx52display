@@ -76,7 +76,7 @@ func RenderFleetCarrierPage(page *mfd.Page, header, fcID, fcName string, systemA
 
 // Page rendering functions for MFD
 func RenderLocationPage(page *mfd.Page, state Journalstate) {
-	// --- Fleet Carrier: CUR FC page ---
+	// --- Fleet Carrier: CURR FC page ---
 	if state.Type == LocationDocked && state.Location.Body != "" && state.BodyType == "Station" {
 		// Try to detect if docked at FC
 		// state.Location.Body = StationName (FC ID), state.Location.SystemAddress
@@ -97,7 +97,7 @@ func RenderLocationPage(page *mfd.Page, state Journalstate) {
 			if fcName == "" {
 				fcName = "Unknown Fleet Carrier"
 			}
-			RenderFleetCarrierPage(page, "CUR FC", fcID, fcName, state.Location.SystemAddress)
+			RenderFleetCarrierPage(page, "CURR FC", fcID, fcName, state.Location.SystemAddress)
 			return
 		}
 		// ...existing code for normal stations...
@@ -105,7 +105,7 @@ func RenderLocationPage(page *mfd.Page, state Journalstate) {
 		if err == nil {
 			for _, st := range stations {
 				if strings.EqualFold(st.Name, state.Location.Body) {
-					RenderStationPage(page, "CUR PORT", st)
+					RenderStationPage(page, "CURR PORT", st)
 					return
 				}
 			}
@@ -113,9 +113,9 @@ func RenderLocationPage(page *mfd.Page, state Journalstate) {
 		// fallback: show as body if not found as station
 	}
 	if state.Type == LocationPlanet || state.Type == LocationLanded {
-		ApplyBodyPage(page, "CUR BODY", state.Location.SystemAddress, state.Location.BodyID, state.Location.Body)
+		ApplyBodyPage(page, "CURR BODY", state.Location.SystemAddress, state.Location.BodyID, state.Location.Body)
 	} else {
-		ApplySystemPage(page, "CUR SYSTEM", state.Location.StarSystem, state.Location.SystemAddress, &state)
+		ApplySystemPage(page, "CURR SYSTEM", state.Location.StarSystem, state.Location.SystemAddress, &state)
 	}
 }
 
@@ -250,7 +250,7 @@ func ApplySystemPage(page *mfd.Page, header, systemname string, systemaddress in
 	// Separate the header (classification) and header display
 	newHeader := header
 	// Format the header based on the header title
-	if header == "NEXT JUMP" || header == "CUR SYSTEM" {
+	if header == "NEXT JUMP" || header == "CURR SYSTEM" {
 		// Add FUEL indicator if star is scoopable
 		if mainBody.IsScoopable {
 
