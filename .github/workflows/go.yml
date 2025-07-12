@@ -64,8 +64,10 @@ jobs:
         run: |
           gh auth setup-git
           gh release delete v${{ github.event.inputs.version }} --yes || true
-          gh tag delete v${{ github.event.inputs.version }} --yes || true
-          gh tag create v${{ github.event.inputs.version }} ${{ needs.build.outputs.sha }} --notes "Release v${{ github.event.inputs.version }}"
+          git tag -d v${{ github.event.inputs.version }} || true
+          git tag -a v${{ github.event.inputs.version }} ${{ needs.build.outputs.sha }} -m "Release v${{ github.event.inputs.version }}"
+          git push origin :refs/tags/v${{ github.event.inputs.version }} || true
+          git push origin v${{ github.event.inputs.version }}
           git fetch --tags
 
       - name: Download artifact from build
