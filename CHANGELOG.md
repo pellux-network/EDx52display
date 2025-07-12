@@ -1,6 +1,12 @@
 # Changelog
 
-## [v0.2.1] - XX-XX-XXXX [PLANNED RELEASE]
+## [v0.2.2] - XX-XX-XXXX
+
+### Changed
+
+- Casing of body types to capital case
+
+## [v0.2.1] - 07-11-2025
 
 ### Added
 - PORT pages for current and targeted star and ground ports
