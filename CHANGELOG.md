@@ -1,6 +1,12 @@
 # Changelog
 
-## [v0.2.2] - XX-XX-XXXX [PLANNED RELEASE]
+## [v0.2.2] - 07-12-2025
+
+### Added
+
+- Automatic version check and update functions
+
+> **INFO:** _This feature is being released on its own to simplify future updates for users, as development is progressing quickly_
 
 ## [v0.2.1] - 07-11-2025
 

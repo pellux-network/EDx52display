@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,7 +26,7 @@ type TextLogFormatter struct{}
 //go:embed icon.ico
 var iconData []byte
 
-const AppVersion = "v0.2.0"
+const AppVersion = "v0.2.2"
 
 func (f *TextLogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
@@ -35,7 +36,42 @@ func (f *TextLogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	return []byte(timestamp + " - " + strings.ToUpper(level) + " - " + message + "\n"), nil
 }
 
+func cleanupOldUpdaters() {
+	tmpDir := os.TempDir()
+	entries, err := os.ReadDir(tmpDir)
+	if err != nil {
+		return
+	}
+	for _, entry := range entries {
+		if (strings.HasPrefix(entry.Name(), "edx52_updater_") && strings.HasSuffix(entry.Name(), ".exe")) ||
+			(strings.HasPrefix(entry.Name(), "edx52_updater_") && strings.HasSuffix(entry.Name(), ".log")) {
+			_ = os.Remove(filepath.Join(tmpDir, entry.Name()))
+		}
+	}
+}
+
 func main() {
+	cleanupOldUpdaters()
+
+	if len(os.Args) > 1 && os.Args[1] == "run-updater" {
+		if len(os.Args) < 5 {
+			fmt.Println("Usage: run-updater oldDir newExe newDir [logFile]")
+			os.Exit(1)
+		}
+		oldDir := os.Args[2]
+		newExe := os.Args[3]
+		newDir := os.Args[4]
+		logFile := ""
+		if len(os.Args) > 5 {
+			logFile = os.Args[5]
+		}
+		if err := RunUpdaterWithLog(oldDir, newExe, newDir, logFile); err != nil {
+			fmt.Println("Updater error:", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
 	systray.Run(onReady, onExit)
 }
 
@@ -48,7 +84,7 @@ func onReady() {
 	mQuit := systray.AddMenuItem("Quit", "Quit the application")
 
 	// Check for updates at startup (non-blocking)
-	go CheckForUpdate(AppVersion)
+	CheckForUpdate(AppVersion)
 
 	// Start your main logic in a goroutine
 	go func() {
