@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.2.3] - 07-12-2025
+
+### Fixed
+
+- Automatic updates are more careful about not deleting unrelated files if they're in a non-standard installation
+- Temp files are in their own directory
+
 ## [v0.2.2] - 07-12-2025
 
 ### Added
