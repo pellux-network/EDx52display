@@ -89,6 +89,9 @@ func onReady() {
 	systray.SetTitle("EDx52Display")
 	systray.SetTooltip("EDx52Display is running")
 
+	// Show notification on successful start
+	_ = zenity.Notify("EDx52display has started successfully.", zenity.Title("EDx52display"))
+
 	mAbout := systray.AddMenuItem("About", "About EDx52display")
 	systray.AddSeparator()
 	mQuit := systray.AddMenuItem("Quit", "Quit EDx52display")

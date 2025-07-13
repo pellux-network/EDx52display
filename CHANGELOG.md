@@ -5,6 +5,7 @@
 ### Added
 
 - About page, accessed by right clicking system tray icon and selecting `About`
+- System notification when app has successfully started
 
 ## [v0.2.3] - 07-12-2025
 
