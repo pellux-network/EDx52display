@@ -26,7 +26,7 @@ type TextLogFormatter struct{}
 //go:embed icon.ico
 var iconData []byte
 
-const AppVersion = "v0.2.2"
+const AppVersion = "v0.2.2.1.1"
 
 func (f *TextLogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
@@ -36,21 +36,28 @@ func (f *TextLogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	return []byte(timestamp + " - " + strings.ToUpper(level) + " - " + message + "\n"), nil
 }
 
+func ensureAppMarker() {
+	exePath, _ := os.Executable()
+	appDir := filepath.Dir(exePath)
+	marker := filepath.Join(appDir, ".edx52_appdir")
+	_ = os.WriteFile(marker, []byte("EDx52display app directory marker"), 0644)
+}
+
 func cleanupOldUpdaters() {
-	tmpDir := os.TempDir()
+	tmpDir := filepath.Join(os.TempDir(), "EDx52display")
 	entries, err := os.ReadDir(tmpDir)
 	if err != nil {
 		return
 	}
 	for _, entry := range entries {
-		if (strings.HasPrefix(entry.Name(), "edx52_updater_") && strings.HasSuffix(entry.Name(), ".exe")) ||
-			(strings.HasPrefix(entry.Name(), "edx52_updater_") && strings.HasSuffix(entry.Name(), ".log")) {
-			_ = os.Remove(filepath.Join(tmpDir, entry.Name()))
-		}
+		_ = os.Remove(filepath.Join(tmpDir, entry.Name()))
 	}
+	// Optionally remove the directory itself if empty
+	_ = os.Remove(tmpDir)
 }
 
 func main() {
+	ensureAppMarker()
 	cleanupOldUpdaters()
 
 	if len(os.Args) > 1 && os.Args[1] == "run-updater" {

@@ -293,9 +293,10 @@ func startUpdater(oldDir, newExe, newDir string) error {
 	}
 	parentDir := filepath.Dir(oldDir)
 
-	// Copy the updater to a temp location (unique name per update).
+	// Use a dedicated temp subdirectory for updater files
+	tmpDir := filepath.Join(os.TempDir(), "EDx52display")
+	_ = os.MkdirAll(tmpDir, 0700)
 	timestamp := time.Now().UnixNano()
-	tmpDir := os.TempDir()
 	tmpUpdater := filepath.Join(tmpDir, fmt.Sprintf("edx52_updater_%d.exe", timestamp))
 	tmpLog := filepath.Join(tmpDir, fmt.Sprintf("edx52_updater_%d.log", timestamp))
 

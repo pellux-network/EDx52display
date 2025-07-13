@@ -15,8 +15,9 @@ import (
 )
 
 // RunUpdaterWithLog performs the update process from a temporary updater executable.
-// It deletes the old version directory, shows a Zenity dialog on success/failure,
-// and then starts the new version. All logs are written to the provided logFile.
+// It deletes only known files and directories from the old version directory (for safety),
+// shows a Zenity dialog on success/failure, and then starts the new version.
+// All logs are written to the provided logFile.
 func RunUpdaterWithLog(oldDir, newExe, newDir, logFile string) error {
 	// Open the log file for writing update progress and errors.
 	if logFile == "" {
@@ -76,10 +77,23 @@ func RunUpdaterWithLog(oldDir, newExe, newDir, logFile string) error {
 	// Close the log file before starting the new process or deleting the directory.
 	f.Close()
 
-	// Try to delete the old directory, retrying if necessary.
+	// List of known files and directories to delete (update as needed for your app)
+	knownFiles := []string{
+		"EDx52display*.exe", // all versioned exes
+		"conf.yaml",
+		"LICENSE",
+		"README.md",
+		".edx52_appdir",
+	}
+	knownDirs := []string{
+		"names",
+		"bin",
+	}
+
+	// Try to delete the old directory contents, retrying if necessary.
 	var updateErr error
 	for i := 0; i < 10; i++ {
-		updateErr = os.RemoveAll(oldDir)
+		updateErr = safeRemoveOldDir(oldDir, knownFiles, knownDirs)
 		if updateErr == nil {
 			break
 		}
@@ -157,5 +171,23 @@ func getSysProcAttr() *syscall.SysProcAttr {
 	if runtime.GOOS == "windows" {
 		return &syscall.SysProcAttr{HideWindow: true}
 	}
+	return nil
+}
+
+// safeRemoveOldDir deletes only known files (using glob patterns) and directories in the old directory.
+// If the directory is empty after deletion, it will be removed as well.
+func safeRemoveOldDir(oldDir string, knownFiles []string, knownDirs []string) error {
+	// Remove files matching patterns
+	for _, pattern := range knownFiles {
+		matches, _ := filepath.Glob(filepath.Join(oldDir, pattern))
+		for _, match := range matches {
+			_ = os.Remove(match)
+		}
+	}
+	for _, dir := range knownDirs {
+		_ = os.RemoveAll(filepath.Join(oldDir, dir))
+	}
+	// Try to remove the directory itself if empty (ignore error if not empty)
+	_ = os.Remove(oldDir)
 	return nil
 }
