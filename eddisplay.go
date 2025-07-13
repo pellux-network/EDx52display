@@ -14,6 +14,7 @@ import (
 	_ "embed"
 
 	"github.com/getlantern/systray"
+	"github.com/ncruces/zenity"
 	"github.com/pellux-network/EDx52display/conf"
 	"github.com/pellux-network/EDx52display/edreader"
 	"github.com/pellux-network/EDx52display/edsm"
@@ -26,7 +27,7 @@ type TextLogFormatter struct{}
 //go:embed icon.ico
 var iconData []byte
 
-const AppVersion = "v0.2.3"
+const AppVersion = "v0.2.4"
 
 func (f *TextLogFormatter) Format(entry *log.Entry) ([]byte, error) {
 	timestamp := time.Now().UTC().Format("2006-01-02 15:04:05")
@@ -88,10 +89,22 @@ func onReady() {
 	systray.SetTitle("EDx52Display")
 	systray.SetTooltip("EDx52Display is running")
 
-	mQuit := systray.AddMenuItem("Quit", "Quit the application")
+	mAbout := systray.AddMenuItem("About", "About EDx52display")
+	systray.AddSeparator()
+	mQuit := systray.AddMenuItem("Quit", "Quit EDx52display")
 
 	// Check for updates at startup (non-blocking)
 	CheckForUpdate(AppVersion)
+
+	// Handle About menu click
+	go func() {
+		for {
+			select {
+			case <-mAbout.ClickedCh:
+				showAboutDialog()
+			}
+		}
+	}()
 
 	// Start your main logic in a goroutine
 	go func() {
@@ -165,4 +178,9 @@ func onExit() {
 // getIcon returns an icon as []byte. Replace with your own icon if desired.
 func getIcon() []byte {
 	return iconData
+}
+
+func showAboutDialog() {
+	aboutText := fmt.Sprintf("EDx52display %s\n\nSeamlessly reads Elite Dangerous journal data and presents real-time system, planet, cargo, and other information on your Saitek/Logitech X52 Pro Multi-Function Display.\n\n© Pellux Network", AppVersion)
+	_ = zenity.Info(aboutText, zenity.Title("About EDx52display"))
 }

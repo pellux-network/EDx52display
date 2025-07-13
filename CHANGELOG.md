@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.2.4] - XX-XX-XXXX [Planned Release]
+
+### Added
+
+- About page, accessed by right clicking system tray icon and selecting `About`
+
 ## [v0.2.3] - 07-12-2025
 
 ### Fixed
