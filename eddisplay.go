@@ -101,11 +101,8 @@ func onReady() {
 
 	// Handle About menu click
 	go func() {
-		for {
-			select {
-			case <-mAbout.ClickedCh:
-				showAboutDialog()
-			}
+		for range mAbout.ClickedCh {
+			showAboutDialog()
 		}
 	}()
 
@@ -170,8 +167,6 @@ func onReady() {
 		<-mQuit.ClickedCh
 		systray.Quit()
 	}()
-
-	// Optionally, handle other menu items here
 }
 
 func onExit() {
