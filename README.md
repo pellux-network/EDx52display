@@ -1,3 +1,9 @@
+> <h1 align="center" style="color:red;">🚨 DEPRECATED 🚨</h1>
+> 
+> <h3 align="center">This project has been moved.<br>
+> Please use <a href="https://github.com/pellux-network/EDxDC">pellux-network/EDxDC</a> to follow current releases.</h3>
+<br>
+<br>
 <p align="center">
   <img src="./assets/giticon.png" alt="EDx52display Logo">
 </p>
